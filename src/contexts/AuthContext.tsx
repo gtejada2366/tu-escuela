@@ -83,6 +83,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) { setLoading(false); return; }
     const sb = supabase;
+    let settled = false;
+    const finishLoading = () => { if (!settled) { settled = true; setLoading(false); } };
+
+    // Safety timeout: never stay on loading screen forever
+    const timeout = setTimeout(finishLoading, 5000);
 
     sb.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
@@ -111,8 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await sb.auth.signOut({ scope: "local" });
         }
       }
-      setLoading(false);
-    }).catch(() => setLoading(false));
+      finishLoading();
+    }).catch(finishLoading);
+
+    return () => clearTimeout(timeout);
 
     const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
