@@ -47,8 +47,8 @@ export function Roles() {
     try {
       await removeUser(deletingUserId);
       showToast("Usuario eliminado correctamente", "success");
-    } catch {
-      showToast("Error al guardar. Intenta de nuevo.", "error");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Error al eliminar usuario", "error");
       return;
     }
     setShowDeleteModal(false);
@@ -93,8 +93,8 @@ export function Roles() {
       try {
         await updateUser(editingUserId, data);
         showToast("Usuario actualizado correctamente", "success");
-      } catch {
-        showToast("Error al guardar. Intenta de nuevo.", "error");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al actualizar usuario", "error");
         return;
       }
     } else {
@@ -116,8 +116,8 @@ export function Roles() {
           password: formPassword.trim(),
         });
         showToast("Usuario creado correctamente", "success");
-      } catch {
-        showToast("Error al guardar. Intenta de nuevo.", "error");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al crear usuario", "error");
         return;
       }
     }

@@ -275,19 +275,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Save the director's session before signUp (signUp auto-signs-in the new user)
       const { data: { session: directorSession } } = await supabase.auth.getSession();
 
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: { data: { name: userData.name, role: userData.role } },
       });
-      if (error) throw new Error(error.message);
+      if (signUpError) throw new Error(signUpError.message);
+
+      // Supabase returns a fake user with no identities when email already exists
+      if (signUpData.user && signUpData.user.identities?.length === 0) {
+        throw new Error("Ya existe un usuario con ese correo electrónico");
+      }
 
       // Restore the director's session so they stay logged in
       if (directorSession) {
-        await supabase.auth.setSession({
+        const { error: sessionError } = await supabase.auth.setSession({
           access_token: directorSession.access_token,
           refresh_token: directorSession.refresh_token,
         });
+        if (sessionError) {
+          console.error("Error restaurando sesión del director:", sessionError);
+          // Re-authenticate the director by refreshing from storage
+          await supabase.auth.refreshSession();
+        }
       }
 
       // Profile is auto-created by trigger — reload registry
