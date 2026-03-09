@@ -32,7 +32,7 @@ function toInputDateString(date: Date): string {
 
 export function Attendance() {
   const { showToast } = useToast();
-  const { classesData, selectedDate, changeDate, loading, error, saveAttendance } = useAttendanceData();
+  const { classesData, selectedDate, changeDate, loading, error, saveAttendance, loadClassStudents } = useAttendanceData();
 
   useEffect(() => { if (error) showToast(error, "error"); }, [error]);
 
@@ -87,9 +87,15 @@ export function Attendance() {
 
   const detailClass = detailClassId !== null ? classesData.find((c) => c.id === detailClassId) : null;
 
-  function handleOpenDetail(cls: ClassAttendance) {
+  async function handleOpenDetail(cls: ClassAttendance) {
     setDetailClassId(cls.id);
-    setEditStudents(cls.students.map((s) => ({ ...s })));
+    if (cls.students.length > 0) {
+      setEditStudents(cls.students.map((s) => ({ ...s })));
+    } else {
+      // Supabase mode: fetch students on demand
+      const students = await loadClassStudents(cls.id);
+      setEditStudents(students.map((s) => ({ ...s })));
+    }
   }
 
   function handleCloseDetail() {

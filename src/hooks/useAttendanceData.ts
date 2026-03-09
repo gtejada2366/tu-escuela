@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { isSupabaseEnabled } from "../lib/supabase";
 import { attendanceService } from "../services/attendance.service";
+import { classesService } from "../services/classes.service";
 
 export type AttendanceStatus = "Presente" | "Ausente" | "Tardanza";
 
@@ -131,5 +132,35 @@ export function useAttendanceData() {
     );
   }, [selectedDate]);
 
-  return { classesData, setClassesData, selectedDate, changeDate, loading, error, saveAttendance, recalcClass };
+  const loadClassStudents = useCallback(async (classId: number): Promise<StudentRecord[]> => {
+    if (!isSupabaseEnabled()) {
+      const cls = classesData.find((c) => c.id === classId);
+      return cls?.students ?? [];
+    }
+
+    const statusMap: Record<string, AttendanceStatus> = { present: "Presente", absent: "Ausente", late: "Tardanza" };
+
+    const [enrollments, records] = await Promise.all([
+      classesService.getEnrollments(classId),
+      attendanceService.getByClassAndDate(classId, toISODate(selectedDate)),
+    ]);
+
+    const students: StudentRecord[] = enrollments.map((e) => {
+      const record = records.find((r) => r.student_id === e.student_id);
+      return {
+        id: e.student_id,
+        name: e.student_name,
+        status: record ? statusMap[record.status] ?? "Presente" : "Presente",
+      };
+    });
+
+    // Update classesData with the fetched students
+    setClassesData((prev) =>
+      prev.map((cls) => cls.id === classId ? { ...cls, students } : cls)
+    );
+
+    return students;
+  }, [classesData, selectedDate]);
+
+  return { classesData, setClassesData, selectedDate, changeDate, loading, error, saveAttendance, recalcClass, loadClassStudents };
 }

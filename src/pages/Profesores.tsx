@@ -51,8 +51,6 @@ export function Profesores() {
   const [formAddress, setFormAddress] = useState("");
   const [formStatus, setFormStatus] = useState<"active" | "inactive">("active");
 
-  if (loading) return <LoadingSpinner />;
-
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -71,6 +69,8 @@ export function Profesores() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, subjectFilter, statusFilter]);
+
+  if (loading) return <LoadingSpinner />;
 
   const handleSort = (key: string) => {
     const next = getNextSort(key, sortKey, sortDir);
@@ -346,7 +346,7 @@ export function Profesores() {
                   <td className="px-6 py-4">{getStatusBadge(professor.status)}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Link to={`/profesores/${professor.id}`} className="text-sm text-[#2563eb] hover:text-[#1d4ed8] transition-colors">Ver</Link>
+                      <Link to={`/profesores/${professor.uid ?? professor.id}`} className="text-sm text-[#2563eb] hover:text-[#1d4ed8] transition-colors">Ver</Link>
                       <button onClick={() => handleOpenEdit(professor)} className="text-sm text-[#64748b] hover:text-[#1e293b] transition-colors">Editar</button>
                       <button onClick={() => handleOpenDelete(professor)} className="text-sm text-[#dc2626] hover:text-[#b91c1c] transition-colors">Eliminar</button>
                     </div>

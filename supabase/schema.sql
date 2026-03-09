@@ -8,6 +8,7 @@
 CREATE TABLE profiles (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
+  email       TEXT,
   role        TEXT NOT NULL CHECK (role IN ('director', 'profesor')),
   avatar      TEXT,
   status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
@@ -19,10 +20,11 @@ CREATE TABLE profiles (
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, name, role, avatar)
+  INSERT INTO profiles (id, name, email, role, avatar)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'name', NEW.email),
+    NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'role', 'profesor'),
     COALESCE(NEW.raw_user_meta_data->>'avatar', UPPER(LEFT(COALESCE(NEW.raw_user_meta_data->>'name', NEW.email), 2)))
   );
@@ -170,6 +172,19 @@ CREATE TABLE message_attachments (
 );
 
 
+-- 12. Homework
+-- ============================================================
+CREATE TABLE homework (
+  id          SERIAL PRIMARY KEY,
+  class_id    INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  description TEXT,
+  due_date    DATE NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+
 -- ============================================================
 -- INDEXES
 -- ============================================================
@@ -186,6 +201,7 @@ CREATE INDEX idx_grades_student ON grades(student_id);
 CREATE INDEX idx_payments_student ON payments(student_id);
 CREATE INDEX idx_payments_status ON payments(status);
 CREATE INDEX idx_payments_due_date ON payments(due_date);
+CREATE INDEX idx_homework_class ON homework(class_id);
 CREATE INDEX idx_messages_sender ON messages(sender_id);
 CREATE INDEX idx_message_recipients_message ON message_recipients(message_id);
 CREATE INDEX idx_message_recipients_user ON message_recipients(recipient_id);
@@ -204,6 +220,7 @@ ALTER TABLE grades ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message_recipients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE homework ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message_attachments ENABLE ROW LEVEL SECURITY;
 
 -- Helper: check if current user is director
@@ -266,6 +283,12 @@ CREATE POLICY "Grades: profesor manages own" ON grades FOR ALL USING (
 
 -- PAYMENTS: director full access only
 CREATE POLICY "Payments: director full" ON payments FOR ALL USING (is_director());
+
+-- HOMEWORK: director full, profesor manages own classes
+CREATE POLICY "Homework: director full" ON homework FOR ALL USING (is_director());
+CREATE POLICY "Homework: profesor manages own" ON homework FOR ALL USING (
+  is_teacher_of_class(class_id)
+);
 
 -- MESSAGES: sender and recipients can read, authenticated users can send
 CREATE POLICY "Messages: read own" ON messages FOR SELECT USING (
@@ -395,3 +418,4 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON classes FOR EACH ROW EXECUTE FUNC
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON attendance FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON grades FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON homework FOR EACH ROW EXECUTE FUNCTION update_updated_at();

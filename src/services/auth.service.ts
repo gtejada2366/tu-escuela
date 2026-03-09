@@ -123,7 +123,7 @@ async function supabaseCreateUser(userData: { name: string; email: string; passw
   return error ? error.message : null;
 }
 
-async function supabaseUpdateUser(userId: string, data: Partial<Pick<Profile, "name" | "role" | "status">>): Promise<string | null> {
+async function supabaseUpdateUser(userId: string, data: Partial<Pick<Profile, "name" | "email" | "role" | "status">>): Promise<string | null> {
   if (!supabase) return "Supabase no configurado";
   const { error } = await supabase.from("profiles").update(data).eq("id", userId);
   return error ? error.message : null;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { isSupabaseEnabled } from "../lib/supabase";
+import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { studentsService } from "../services/students.service";
 import { classesService } from "../services/classes.service";
@@ -34,6 +34,13 @@ export interface PaymentSummary {
   collectionRate: string;
 }
 
+export interface TeacherClass {
+  id: number;
+  name: string;
+  schedule: string;
+  classroom: string;
+}
+
 export interface DirectorStats {
   totalStudents: string;
   totalProfessors: string;
@@ -52,7 +59,12 @@ export interface ProfesorStats {
   pendingEvals: string;
   attendance: AttendanceSummary;
   recentActivity: ActivityItem[];
+  todayClasses: TeacherClass[];
 }
+
+const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+const emptyAttendance: AttendanceSummary = { present: 0, presentPct: "0%", absent: 0, absentPct: "0%", late: 0, latePct: "0%" };
 
 const demoDirectorStats: DirectorStats = {
   totalStudents: "378",
@@ -89,10 +101,35 @@ const demoProfesorStats: ProfesorStats = {
     { id: 2, text: "Asistencia de hoy registrada", time: "Hace 3 horas", iconName: "ClipboardCheck" },
     { id: 3, text: "Nuevo mensaje de Ana Rodríguez (madre)", time: "Hace 5 horas", iconName: "CheckCircle2" },
   ],
+  todayClasses: [],
 };
 
 function formatCurrency(n: number): string {
   return `S/ ${n.toLocaleString("es-PE")}`;
+}
+
+function toISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `Hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Hace ${hours} hora${hours > 1 ? "s" : ""}`;
+  const days = Math.floor(hours / 24);
+  return `Hace ${days} día${days > 1 ? "s" : ""}`;
+}
+
+function computeAttendanceSummary(records: { status: string }[]): AttendanceSummary {
+  const total = records.length;
+  if (total === 0) return emptyAttendance;
+  const present = records.filter((r) => r.status === "present").length;
+  const absent = records.filter((r) => r.status === "absent").length;
+  const late = records.filter((r) => r.status === "late").length;
+  const pct = (n: number) => `${total > 0 ? ((n / total) * 100).toFixed(1) : 0}%`;
+  return { present, presentPct: pct(present), absent, absentPct: pct(absent), late, latePct: pct(late) };
 }
 
 export function useDashboardData() {
@@ -103,50 +140,189 @@ export function useDashboardData() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseEnabled()) return;
+    if (!isSupabaseEnabled() || !supabase) return;
     setLoading(true);
     setError(null);
+    const today = toISODate(new Date());
 
     if (!isProfesor) {
-      // Director dashboard: aggregate from services
+      // ── Director dashboard ─────────────────────────────────
       Promise.all([
         studentsService.count(),
         authService.getAllUsers(),
         classesService.getAll(),
         paymentsService.getSummaryStats(),
-      ]).then(([studentCount, profiles, classes, paymentStats]) => {
+        // Attendance today (all classes)
+        supabase.from("attendance").select("status").eq("date", today),
+        // Enrollment trend: all active students with created_at
+        supabase.from("students").select("created_at").eq("status", "active"),
+        // Recent activity: recent paid payments
+        supabase.from("payment_summary").select("student_name, amount, paid_date").eq("status", "paid").order("paid_date", { ascending: false }).limit(3),
+        // Recent enrollments
+        supabase.from("students").select("name, grade, created_at").order("created_at", { ascending: false }).limit(3),
+      ]).then(([studentCount, profiles, classes, paymentStats, attResult, studentsResult, recentPaymentsResult, recentStudentsResult]) => {
         const professorCount = profiles.filter((p) => p.role === "profesor" && p.status === "active").length;
         const activeClasses = classes.filter((c) => c.status === "active").length;
         const totalPayments = paymentStats.paid + paymentStats.pending + paymentStats.overdue;
         const collectionRate = totalPayments > 0 ? ((paymentStats.paid / totalPayments) * 100).toFixed(1) : "0";
 
-        setDirectorStats((prev) => ({
-          ...prev,
+        // Attendance today
+        const attRecords = attResult.data ?? [];
+        const attSummary = computeAttendanceSummary(attRecords);
+        const attTotal = attRecords.length;
+        const presentCount = attRecords.filter((r) => r.status === "present").length;
+        const attendancePct = attTotal > 0 ? ((presentCount / attTotal) * 100).toFixed(1) : "0";
+
+        // Enrollment trend by month
+        const enrollByMonth: Record<string, number> = {};
+        for (const s of studentsResult.data ?? []) {
+          const d = new Date(s.created_at);
+          const key = `${d.getFullYear()}-${d.getMonth()}`;
+          enrollByMonth[key] = (enrollByMonth[key] ?? 0) + 1;
+        }
+        // Build cumulative chart for current year
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth();
+        let cumulative = 0;
+        const enrollment: EnrollmentPoint[] = [];
+        for (let m = 0; m <= currentMonth; m++) {
+          cumulative += enrollByMonth[`${currentYear}-${m}`] ?? 0;
+          enrollment.push({ month: monthNames[m], students: cumulative });
+        }
+        // If no enrollment data, show total as flat line
+        if (enrollment.length === 0 || cumulative === 0) {
+          enrollment.length = 0;
+          enrollment.push({ month: monthNames[currentMonth], students: studentCount });
+        }
+
+        // Recent activity from payments + enrollments
+        const activity: ActivityItem[] = [];
+        let actId = 1;
+        for (const p of recentPaymentsResult.data ?? []) {
+          activity.push({
+            id: actId++,
+            text: `Pago recibido de ${p.student_name} — S/ ${Number(p.amount).toLocaleString("es-PE")}`,
+            time: p.paid_date ? timeAgo(p.paid_date) : "",
+            iconName: "DollarSign",
+          });
+        }
+        for (const s of recentStudentsResult.data ?? []) {
+          activity.push({
+            id: actId++,
+            text: `${s.name} fue matriculado/a en ${s.grade}`,
+            time: timeAgo(s.created_at),
+            iconName: "UserPlus",
+          });
+        }
+        // Sort by time (most recent first) — approximate by id since they're already sorted
+        activity.sort((a, b) => a.time.localeCompare(b.time));
+
+        setDirectorStats({
           totalStudents: String(studentCount),
           totalProfessors: String(professorCount),
           activeClasses: String(activeClasses),
+          attendanceToday: `${attendancePct}%`,
+          enrollment,
+          attendance: attSummary,
           payments: {
             received: formatCurrency(paymentStats.paid),
             pending: formatCurrency(paymentStats.pending),
             overdue: formatCurrency(paymentStats.overdue),
             collectionRate: `${collectionRate}%`,
           },
-        }));
+          recentActivity: activity.slice(0, 5),
+        });
         setLoading(false);
       }).catch(() => {
         setError("Error al cargar los datos. Verifica tu conexión.");
         setLoading(false);
       });
     } else {
-      // Profesor dashboard: get their classes
+      // ── Profesor dashboard ─────────────────────────────────
       if (!user?.uid) { setLoading(false); return; }
-      classesService.getByTeacher(user.uid).then((classes) => {
-        const totalStudents = classes.reduce((sum, c) => sum + (c.student_count ?? 0), 0);
-        setProfesorStats((prev) => ({
-          ...prev,
+      classesService.getByTeacher(user.uid).then(async (classes) => {
+        const totalStudents = classes.reduce((sum, c) => sum + (Number(c.student_count) || 0), 0);
+        const classIds = classes.map((c) => c.id);
+
+        // Today's attendance for teacher's classes
+        let attSummary = emptyAttendance;
+        let avgAttPct = "0%";
+        if (classIds.length > 0 && supabase) {
+          const { data: attRecords } = await supabase
+            .from("attendance")
+            .select("status")
+            .in("class_id", classIds)
+            .eq("date", today);
+          if (attRecords && attRecords.length > 0) {
+            attSummary = computeAttendanceSummary(attRecords);
+            const presentCount = attRecords.filter((r) => r.status === "present").length;
+            avgAttPct = `${((presentCount / attRecords.length) * 100).toFixed(1)}%`;
+          }
+        }
+
+        // Pending evals: classes without any grades for current period
+        let pendingEvals = 0;
+        if (supabase && classIds.length > 0) {
+          const { data: gradeRecords } = await supabase
+            .from("grades")
+            .select("class_id")
+            .in("class_id", classIds);
+          const classesWithGrades = new Set((gradeRecords ?? []).map((g) => g.class_id));
+          pendingEvals = classIds.filter((id) => !classesWithGrades.has(id)).length;
+        }
+
+        // Teacher's classes for "Mis Clases Hoy"
+        const todayClasses: TeacherClass[] = classes.map((c) => ({
+          id: c.id,
+          name: `${c.subject} - ${c.grade} ${c.section}`,
+          schedule: c.schedule ?? "",
+          classroom: c.classroom ?? "",
+        }));
+
+        // Recent activity from attendance
+        const recentActivity: ActivityItem[] = [];
+        if (supabase && classIds.length > 0) {
+          const { data: recentAtt } = await supabase
+            .from("attendance")
+            .select("date, class_id")
+            .in("class_id", classIds)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (recentAtt && recentAtt.length > 0) {
+            const cls = classes.find((c) => c.id === recentAtt[0].class_id);
+            recentActivity.push({
+              id: 1,
+              text: `Asistencia registrada para ${cls ? cls.subject + " " + cls.grade : "clase"}`,
+              time: timeAgo(recentAtt[0].date),
+              iconName: "ClipboardCheck",
+            });
+          }
+          const { data: recentGrades } = await supabase
+            .from("grades")
+            .select("updated_at, class_id")
+            .in("class_id", classIds)
+            .order("updated_at", { ascending: false })
+            .limit(1);
+          if (recentGrades && recentGrades.length > 0) {
+            const cls = classes.find((c) => c.id === recentGrades[0].class_id);
+            recentActivity.push({
+              id: 2,
+              text: `Calificaciones actualizadas para ${cls ? cls.subject + " " + cls.grade : "clase"}`,
+              time: timeAgo(recentGrades[0].updated_at),
+              iconName: "CheckCircle2",
+            });
+          }
+        }
+
+        setProfesorStats({
           myClasses: String(classes.length),
           myStudents: String(totalStudents),
-        }));
+          avgAttendance: avgAttPct,
+          pendingEvals: String(pendingEvals),
+          attendance: attSummary,
+          recentActivity,
+          todayClasses,
+        });
         setLoading(false);
       }).catch(() => {
         setError("Error al cargar los datos. Verifica tu conexión.");

@@ -58,10 +58,10 @@ function DirectorDashboard({ stats }: { stats: ReturnType<typeof useDashboardDat
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Total Estudiantes" value={stats.totalStudents} icon={Users} change="+12 este mes" changeType="positive" />
-        <MetricCard title="Total Profesores" value={stats.totalProfessors} icon={GraduationCap} change="+2 este mes" changeType="positive" />
-        <MetricCard title="Clases Activas" value={stats.activeClasses} icon={BookOpen} change="1 inactiva" changeType="neutral" />
-        <MetricCard title="Asistencia Hoy" value={stats.attendanceToday} icon={TrendingUp} change="+2.1%" changeType="positive" />
+        <MetricCard title="Total Estudiantes" value={stats.totalStudents} icon={Users} change="Matriculados" changeType="neutral" />
+        <MetricCard title="Total Profesores" value={stats.totalProfessors} icon={GraduationCap} change="Activos" changeType="neutral" />
+        <MetricCard title="Clases Activas" value={stats.activeClasses} icon={BookOpen} change="En curso" changeType="neutral" />
+        <MetricCard title="Asistencia Hoy" value={stats.attendanceToday} icon={TrendingUp} change="Del día" changeType="neutral" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -191,37 +191,26 @@ function ProfesorDashboard({ userName, stats }: { userName: string; stats: Retur
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Mis Clases" value={stats.myClasses} icon={BookOpen} change="Activas" changeType="positive" />
+        <MetricCard title="Mis Clases" value={stats.myClasses} icon={BookOpen} change="Activas" changeType="neutral" />
         <MetricCard title="Mis Estudiantes" value={stats.myStudents} icon={Users} change="En total" changeType="neutral" />
-        <MetricCard title="Asistencia Promedio" value={stats.avgAttendance} icon={TrendingUp} change="+1.3% vs mes pasado" changeType="positive" />
-        <MetricCard title="Evaluaciones Pendientes" value={stats.pendingEvals} icon={CalendarDays} change="Esta semana" changeType="neutral" />
+        <MetricCard title="Asistencia Hoy" value={stats.avgAttendance} icon={TrendingUp} change="Del día" changeType="neutral" />
+        <MetricCard title="Evaluaciones Pendientes" value={stats.pendingEvals} icon={CalendarDays} change="Clases sin notas" changeType="neutral" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg p-6 border border-border shadow-sm">
-          <h3 className="text-lg text-[#1e293b] mb-4">Mis Clases Hoy</h3>
+          <h3 className="text-lg text-[#1e293b] mb-4">Mis Clases</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc] transition-colors">
-              <div>
-                <p className="text-sm text-[#1e293b]">Matemática - 3° Primaria A</p>
-                <p className="text-xs text-[#64748b]">8:00 - 9:30 AM · Aula 205</p>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-[#d1fae5] text-xs text-[#065f46]">Completada</span>
-            </div>
-            <div className="flex items-center justify-between p-4 rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc] transition-colors">
-              <div>
-                <p className="text-sm text-[#1e293b]">Matemática - 4° Primaria B</p>
-                <p className="text-xs text-[#64748b]">10:00 - 11:30 AM · Aula 301</p>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-[#eff6ff] text-xs text-[#2563eb]">En curso</span>
-            </div>
-            <div className="flex items-center justify-between p-4 rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc] transition-colors">
-              <div>
-                <p className="text-sm text-[#1e293b]">Álgebra - 2° Secundaria A</p>
-                <p className="text-xs text-[#64748b]">2:00 - 3:30 PM · Lab. 102</p>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-[#f1f5f9] text-xs text-[#64748b]">Pendiente</span>
-            </div>
+            {stats.todayClasses.length > 0 ? stats.todayClasses.map((cls) => (
+              <Link key={cls.id} to="/clases" className="flex items-center justify-between p-4 rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc] transition-colors">
+                <div>
+                  <p className="text-sm text-[#1e293b]">{cls.name}</p>
+                  <p className="text-xs text-[#64748b]">{[cls.schedule, cls.classroom].filter(Boolean).join(" · ") || "Sin horario asignado"}</p>
+                </div>
+              </Link>
+            )) : (
+              <p className="text-sm text-[#64748b] py-4 text-center">No tienes clases asignadas</p>
+            )}
           </div>
         </div>
 

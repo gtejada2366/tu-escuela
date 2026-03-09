@@ -72,6 +72,12 @@ export type Database = {
         Update: Partial<Omit<MessageAttachment, "id">>;
         Relationships: [];
       };
+      homework: {
+        Row: HomeworkRecord;
+        Insert: Omit<HomeworkRecord, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<HomeworkRecord, "id">>;
+        Relationships: [];
+      };
     };
     Views: {
       classes_view: { Row: ClassView; Relationships: [] };
@@ -87,6 +93,7 @@ export type Database = {
 export type Profile = {
   id: string;
   name: string;
+  email: string | null;
   role: "director" | "profesor";
   avatar: string | null;
   status: "active" | "inactive";
@@ -202,6 +209,16 @@ export type MessageAttachment = {
   file_size: string | null;
   file_type: string | null;
   created_at: string;
+};
+
+export type HomeworkRecord = {
+  id: number;
+  class_id: number;
+  title: string;
+  description: string | null;
+  due_date: string;
+  created_at: string;
+  updated_at: string;
 };
 
 // ── View types ───────────────────────────────────────────────

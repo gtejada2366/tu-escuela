@@ -207,8 +207,9 @@ export function useProfesorProfileData(id: string | undefined) {
       classesService.getAll(),
     ]).then(([profiles, allClasses]) => {
       const professorProfiles = profiles.filter((p) => p.role === "profesor");
-      // Try to find by index (id is 1-based) or by UUID
-      const profile = professorProfiles[Number(id) - 1] ?? profiles.find((p) => p.id === id);
+      // Try UUID first, then fallback to index-based lookup
+      const profile = profiles.find((p) => p.id === id)
+        ?? professorProfiles[Number(id) - 1];
       if (!profile) { setLoading(false); return; }
 
       const teacherClasses = allClasses.filter((c) => c.teacher_id === profile.id);

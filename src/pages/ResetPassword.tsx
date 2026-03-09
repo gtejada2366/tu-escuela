@@ -67,9 +67,9 @@ export function ResetPassword() {
     // Redirect to login after a short delay
     const sb = supabase;
     setTimeout(() => {
-      sb!.auth.signOut().then(() => {
-        window.location.href = "/";
-      });
+      sb!.auth.signOut()
+        .then(() => { window.location.href = "/"; })
+        .catch(() => { window.location.href = "/"; });
     }, 3000);
   };
 

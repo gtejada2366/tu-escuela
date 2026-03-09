@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import { authService } from "../services/auth.service";
+import { validatePassword } from "../lib/validation";
 
 export type Role = "director" | "profesor";
 
@@ -31,8 +32,8 @@ interface AuthContextType {
   updateCurrentUser: (data: { name: string; email: string }) => Promise<void>;
   usersRegistry: RegisteredUser[];
   addUser: (user: Omit<RegisteredUser, "id" | "avatar">) => Promise<void>;
-  updateUser: (id: number, data: Partial<Omit<RegisteredUser, "id">>) => void;
-  removeUser: (id: number) => void;
+  updateUser: (id: number, data: Partial<Omit<RegisteredUser, "id">>) => Promise<void>;
+  removeUser: (id: number) => Promise<void>;
 }
 
 function generateAvatar(name: string): string {
@@ -56,6 +57,21 @@ const initialRegistry: RegisteredUser[] = [
   { id: 10, name: "Subdirector Académico", email: "subdirector@tuescuela.edu.pe", role: "director", status: "active", avatar: "SA", password: "admin" },
 ];
 
+/** Fetch all profiles from Supabase and map to RegisteredUser[] */
+async function fetchSupabaseProfiles(): Promise<RegisteredUser[]> {
+  const profiles = await authService.getAllUsers();
+  return profiles.map((p, idx) => ({
+    id: idx + 1,
+    uid: p.id,
+    name: p.name,
+    email: p.email ?? "",
+    role: p.role as Role,
+    status: p.status as "active" | "inactive",
+    avatar: p.avatar ?? generateAvatar(p.name),
+    password: "",
+  }));
+}
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -70,8 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     sb.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        const { data: profile } = await sb.from("profiles").select("*").eq("id", session.user.id).single();
-        if (profile && profile.status === "active") {
+        const { data: profile, error: profileError } = await sb
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        if (profileError) {
+          console.error("Session restore: error loading profile", profileError);
+        } else if (profile && profile.status === "active") {
           setUser({
             id: 0,
             uid: profile.id,
@@ -80,25 +102,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             avatar: profile.avatar ?? generateAvatar(profile.name),
             email: session.user.email ?? "",
           });
+          // Load all profiles into registry so Roles page works
+          fetchSupabaseProfiles()
+            .then((profiles) => setUsersRegistry(profiles))
+            .catch(() => {});
+        } else if (profile && profile.status === "inactive") {
+          // Account deactivated — sign out so login screen shows
+          await sb.auth.signOut({ scope: "local" });
         }
       }
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
 
     const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
         setUser(null);
       } else if (session && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
-        const { data: profile } = await sb.from("profiles").select("*").eq("id", session.user.id).single();
-        if (profile && profile.status === "active") {
-          setUser({
-            id: 0,
-            uid: profile.id,
-            name: profile.name,
-            role: profile.role as Role,
-            avatar: profile.avatar ?? generateAvatar(profile.name),
-            email: session.user.email ?? "",
-          });
+        try {
+          const { data: profile, error: profileError } = await sb
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          if (profileError) {
+            console.error("onAuthStateChange: error loading profile", profileError);
+            return;
+          }
+          if (profile && profile.status === "active") {
+            setUser({
+              id: 0,
+              uid: profile.id,
+              name: profile.name,
+              role: profile.role as Role,
+              avatar: profile.avatar ?? generateAvatar(profile.name),
+              email: session.user.email ?? "",
+            });
+          } else if (profile && profile.status === "inactive") {
+            await sb.auth.signOut({ scope: "local" });
+          }
+        } catch {
+          // Profile lookup failed — leave user unset
         }
       }
     });
@@ -116,10 +159,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ? "Correo o contraseña incorrectos"
           : error.message;
       }
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-      if (!profile) return "Perfil no encontrado";
+      if (!data.user) return "Error de autenticación";
+
+      // Ensure the new session is active before querying
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return "Error al establecer la sesión";
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Error al consultar perfil:", profileError);
+        return `Error al cargar perfil: ${profileError.message}`;
+      }
+      if (!profile) return "Perfil no encontrado. Contacta al administrador.";
       if (profile.status === "inactive") {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: "local" });
         return "Esta cuenta está desactivada. Contacta al director.";
       }
       setUser({
@@ -128,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: profile.name,
         role: profile.role as Role,
         avatar: profile.avatar ?? generateAvatar(profile.name),
-        email: data.user.email ?? email,
+        email: session.user.email ?? email,
       });
       return null;
     }
@@ -143,22 +201,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [usersRegistry]);
 
   // ── Logout ───────────────────────────────────────────────
-  const logout = useCallback(() => {
-    if (supabase) { supabase.auth.signOut(); }
+  const logout = useCallback(async () => {
+    if (supabase) { await supabase.auth.signOut({ scope: "local" }); }
     setUser(null);
   }, []);
 
   // ── Change password ──────────────────────────────────────
   const changePassword = useCallback(async (oldPassword: string, newPassword: string): Promise<string | null> => {
     if (!user) return "No has iniciado sesión";
-    if (newPassword.length < 4) return "La nueva contraseña debe tener al menos 4 caracteres";
+    const pwError = validatePassword(newPassword);
+    if (pwError) return pwError;
 
     if (supabase) {
       // Verify old password by re-authenticating
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return "Sesión expirada";
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) return "Sesión expirada";
       const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: session.user.email!,
+        email: currentSession.user.email!,
         password: oldPassword,
       });
       if (verifyError) return "La contraseña actual es incorrecta";
@@ -212,8 +271,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password: userData.password,
         options: { data: { name: userData.name, role: userData.role } },
       });
-      if (error) { console.error("addUser:", error); return; }
-      // Profile is auto-created by trigger
+      if (error) throw new Error(error.message);
+      // Profile is auto-created by trigger — reload registry
+      const profiles = await fetchSupabaseProfiles();
+      setUsersRegistry(profiles);
       return;
     }
 
@@ -225,16 +286,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
   }, [usersRegistry]);
 
-  const updateUser = useCallback((id: number, data: Partial<Omit<RegisteredUser, "id">>) => {
-    // Note: In Supabase mode, use authService.updateUser with UUID instead
-    setUsersRegistry((prev) =>
-      prev.map((u) => {
-        if (u.id !== id) return u;
-        const updated = { ...u, ...data };
-        if (data.name) updated.avatar = generateAvatar(data.name);
-        return updated;
-      })
-    );
+  const updateUser = useCallback(async (id: number, data: Partial<Omit<RegisteredUser, "id">>) => {
+    if (supabase) {
+      const target = usersRegistry.find((u) => u.id === id);
+      if (target?.uid) {
+        const profileData: Partial<Pick<import("../types/database").Profile, "name" | "email" | "role" | "status">> = {};
+        if (data.name) profileData.name = data.name;
+        if (data.email) profileData.email = data.email;
+        if (data.role) profileData.role = data.role;
+        if (data.status) profileData.status = data.status;
+        const error = await authService.updateUser(target.uid, profileData);
+        if (error) throw new Error(error);
+      }
+      // Reload registry from Supabase to reflect changes
+      const profiles = await fetchSupabaseProfiles();
+      setUsersRegistry(profiles);
+    } else {
+      // Demo mode
+      setUsersRegistry((prev) =>
+        prev.map((u) => {
+          if (u.id !== id) return u;
+          const updated = { ...u, ...data };
+          if (data.name) updated.avatar = generateAvatar(data.name);
+          return updated;
+        })
+      );
+    }
+    // Update current user if they edited themselves
     if (user && user.id === id && (data.name || data.email || data.role)) {
       setUser((prev) => {
         if (!prev) return prev;
@@ -245,11 +323,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return updated;
       });
     }
-  }, [user]);
+  }, [user, usersRegistry]);
 
-  const removeUser = useCallback((id: number) => {
+  const removeUser = useCallback(async (id: number) => {
+    if (supabase) {
+      const target = usersRegistry.find((u) => u.id === id);
+      if (target?.uid) {
+        const error = await authService.updateUser(target.uid, { status: "inactive" });
+        if (error) throw new Error(error);
+      }
+      // Reload registry from Supabase to reflect changes
+      const profiles = await fetchSupabaseProfiles();
+      setUsersRegistry(profiles);
+      return;
+    }
+    // Demo mode
     setUsersRegistry((prev) => prev.filter((u) => u.id !== id));
-  }, []);
+  }, [usersRegistry]);
 
   return (
     <AuthContext.Provider

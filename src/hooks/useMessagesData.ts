@@ -53,10 +53,10 @@ export function useMessagesData() {
         content: m.content,
         date: new Date(m.created_at).toLocaleDateString("es-PE"),
         time: new Date(m.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }),
-        unread: m.recipients.some((r) => r.recipient_id === user.uid && !r.is_read),
+        unread: (m.recipients ?? []).some((r) => r.recipient_id === user.uid && !r.is_read),
         category: m.sender_id === user.uid ? "sent" : m.category,
-        recipients: m.recipients.map((r) => r.recipient_label),
-        attachments: m.attachments.map((a) => ({ name: a.file_name, type: a.file_type ?? "file", size: a.file_size ?? "" })),
+        recipients: (m.recipients ?? []).map((r) => r.recipient_label),
+        attachments: (m.attachments ?? []).map((a) => ({ name: a.file_name, type: a.file_type ?? "file", size: a.file_size ?? "" })),
       }));
       if (all.length > 0) setConversations(all);
       setLoading(false);

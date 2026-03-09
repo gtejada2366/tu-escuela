@@ -50,20 +50,22 @@ export function useGradesData() {
         setStudentsData(data.map((g) => ({
           id: g.student_id,
           name: g.student_name,
-          exam1: Number(g.exam1),
-          exam2: Number(g.exam2),
-          homework: Number(g.homework),
-          participation: Number(g.participation),
-          average: Number(g.average),
+          exam1: Number(g.exam1) || 0,
+          exam2: Number(g.exam2) || 0,
+          homework: Number(g.homework) || 0,
+          participation: Number(g.participation) || 0,
+          average: Number(g.average) || 0,
           grades: [],
         })));
       }
+      setLoading(false);
+    }).catch(() => {
       setLoading(false);
     });
   }, [selectedClass]);
 
   const updateGrade = useCallback((studentId: number, field: keyof GradeStudent, value: string) => {
-    const numValue = parseFloat(value) || 0;
+    const numValue = Math.min(20, Math.max(0, parseFloat(value) || 0));
     setStudentsData((prev) =>
       prev.map((student) => {
         if (student.id !== studentId) return student;
@@ -76,8 +78,9 @@ export function useGradesData() {
 
   const saveGrades = useCallback(async () => {
     if (!isSupabaseEnabled()) return;
+    const errors: string[] = [];
     for (const s of studentsData) {
-      await gradesService.upsert({
+      const error = await gradesService.upsert({
         class_id: selectedClass.id,
         student_id: s.id,
         period: "bimestre_1",
@@ -86,7 +89,9 @@ export function useGradesData() {
         homework: s.homework,
         participation: s.participation,
       });
+      if (error) errors.push(`${s.name}: ${error}`);
     }
+    if (errors.length > 0) throw new Error(errors.join("; "));
   }, [studentsData, selectedClass]);
 
   const exportCSV = useCallback(() => {
@@ -101,11 +106,11 @@ export function useGradesData() {
     URL.revokeObjectURL(url);
   }, [studentsData, selectedClass]);
 
-  const courseStats = {
+  const courseStats = studentsData.length > 0 ? {
     average: parseFloat((studentsData.reduce((acc, s) => acc + s.average, 0) / studentsData.length).toFixed(1)),
     highest: Math.max(...studentsData.map((s) => s.average)),
     lowest: Math.min(...studentsData.map((s) => s.average)),
-  };
+  } : { average: 0, highest: 0, lowest: 0 };
 
   return {
     availableClasses,

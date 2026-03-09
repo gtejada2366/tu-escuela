@@ -68,8 +68,12 @@ export function Calificaciones() {
   };
 
   const handleSave = async () => {
-    await saveGrades();
-    showToast("Calificaciones guardadas exitosamente");
+    try {
+      await saveGrades();
+      showToast("Calificaciones guardadas exitosamente");
+    } catch {
+      showToast("Error al guardar calificaciones. Intenta de nuevo.", "error");
+    }
   };
 
   const filteredStudents = studentsData.filter(student => {

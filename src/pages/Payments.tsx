@@ -60,6 +60,7 @@ export function Payments() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
+  const [saving, setSaving] = useState(false);
   const totalAll = totalPaid + totalPending + totalOverdue;
   const collectionRate = totalAll > 0 ? ((totalPaid / totalAll) * 100).toFixed(1) : "0.0";
 
@@ -142,14 +143,17 @@ export function Payments() {
   };
 
   const handleConfirmPayment = async () => {
-    if (!selectedPayment) return;
+    if (!selectedPayment || saving) return;
+    setSaving(true);
     try {
       await registerPayment(selectedPayment.id);
       showToast("Pago registrado exitosamente", "success");
     } catch {
       showToast("Error al guardar. Intenta de nuevo.", "error");
+      setSaving(false);
       return;
     }
+    setSaving(false);
     setConfirmModalOpen(false);
     setSelectedPayment(null);
   };
@@ -424,9 +428,10 @@ export function Payments() {
               </button>
               <button
                 onClick={handleConfirmPayment}
-                className="flex-1 px-4 py-2 rounded-lg bg-[#2563eb] text-white text-sm hover:bg-[#1d4ed8] transition-colors"
+                disabled={saving}
+                className="flex-1 px-4 py-2 rounded-lg bg-[#2563eb] text-white text-sm hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirmar Pago
+                {saving ? "Guardando..." : "Confirmar Pago"}
               </button>
             </div>
           </div>

@@ -62,11 +62,13 @@ export function useClassesData() {
           grade: c.grade,
           section: c.section,
           teacher: c.teacher_name ?? "",
-          students: c.student_count,
+          students: Number(c.student_count) || 0,
           schedule: c.schedule ?? "",
           status: c.status,
         })));
       }
+      setLoading(false);
+    }).catch(() => {
       setLoading(false);
     });
   }, [isProfesor, user]);

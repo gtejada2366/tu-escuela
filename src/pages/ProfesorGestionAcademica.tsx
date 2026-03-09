@@ -1,18 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useParams } from "react-router";
 import { Badge } from "../components/Badge";
 import { Modal } from "../components/Modal";
 import { SortableHeader, sortData, getNextSort, type SortDirection } from "../components/SortableHeader";
 import { useToast } from "../components/Toast";
-import { ArrowLeft, Users, ClipboardCheck, BarChart3, FileText, Save } from "lucide-react";
+import { LoadingSpinner } from "../components/LoadingSpinner";
+import { useAuth } from "../contexts/AuthContext";
+import { isSupabaseEnabled } from "../lib/supabase";
+import { classesService } from "../services/classes.service";
+import { attendanceService } from "../services/attendance.service";
+import { gradesService } from "../services/grades.service";
+import { homeworkService } from "../services/homework.service";
+import { ArrowLeft, Users, ClipboardCheck, BarChart3, FileText, Save, Trash2 } from "lucide-react";
 
-const classesData = [
+// ── Demo data (used when Supabase is NOT configured) ─────────
+const demoClasses = [
   { id: 1, name: "Matemática 3° Primaria A", students: 28 },
   { id: 2, name: "Matemática 4° Primaria B", students: 25 },
   { id: 3, name: "Álgebra 2° Secundaria A", students: 30 },
 ];
 
-const studentsData = [
+const demoStudents = [
   { id: 1, name: "María González Pérez", status: "enrolled" },
   { id: 2, name: "Juan Pérez Rodríguez", status: "enrolled" },
   { id: 3, name: "Sofía Martínez López", status: "enrolled" },
@@ -23,22 +31,7 @@ const studentsData = [
   { id: 8, name: "Santiago Morales Cruz", status: "enrolled" },
 ];
 
-const initialAttendanceData = [
-  { id: 1, name: "María González Pérez", status: "present" },
-  { id: 2, name: "Juan Pérez Rodríguez", status: "present" },
-  { id: 3, name: "Sofía Martínez López", status: "absent" },
-  { id: 4, name: "Diego Ramírez Silva", status: "late" },
-  { id: 5, name: "Valentina Torres Castro", status: "present" },
-  { id: 6, name: "Mateo Flores Ruiz", status: "present" },
-  { id: 7, name: "Isabella Vargas Díaz", status: "present" },
-  { id: 8, name: "Santiago Morales Cruz", status: "late" },
-];
-
-interface GradeRow {
-  id: number; name: string; exam1: number; exam2: number; homework: number; average: number;
-}
-
-const initialGradesData: GradeRow[] = [
+const demoGrades: GradeRow[] = [
   { id: 1, name: "María González Pérez", exam1: 18, exam2: 17, homework: 19, average: 18 },
   { id: 2, name: "Juan Pérez Rodríguez", exam1: 16, exam2: 15, homework: 17, average: 16 },
   { id: 3, name: "Sofía Martínez López", exam1: 19, exam2: 20, homework: 18, average: 19 },
@@ -49,9 +42,22 @@ const initialGradesData: GradeRow[] = [
   { id: 8, name: "Santiago Morales Cruz", exam1: 16, exam2: 17, homework: 15, average: 16 },
 ];
 
-interface Homework {
-  id: number; title: string; dueDate: string; description: string; submitted: number; total: number;
+// ── Types ────────────────────────────────────────────────────
+interface ClassItem { id: number; name: string; students: number; }
+interface StudentItem { id: number; name: string; status: string; }
+interface GradeRow { id: number; name: string; exam1: number; exam2: number; homework: number; average: number; }
+interface Homework { id: number; title: string; dueDate: string; description: string; submitted: number; total: number; }
+
+type Tab = "students" | "attendance" | "grades" | "homework";
+
+function toISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+const formatDateDisplay = (dateStr: string) => {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+};
 
 const initialHomeworkData: Homework[] = [
   { id: 1, title: "Ecuaciones de primer grado", dueDate: "2026-03-15", description: "Resolver ejercicios 1 al 20 del libro de texto, capítulo 5.", submitted: 24, total: 28 },
@@ -59,23 +65,20 @@ const initialHomeworkData: Homework[] = [
   { id: 3, title: "Geometría básica", dueDate: "2026-03-29", description: "Calcular áreas y perímetros de las figuras proporcionadas.", submitted: 18, total: 28 },
 ];
 
-type Tab = "students" | "attendance" | "grades" | "homework";
-
-const formatDateDisplay = (dateStr: string) => {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
-};
-
 export function ProfesorGestionAcademica() {
   const { id } = useParams();
+  const { user } = useAuth();
   const { showToast } = useToast();
-  const [selectedClass, setSelectedClass] = useState(classesData[0]);
-  const [activeTab, setActiveTab] = useState<Tab>("students");
-  const [attendanceStatuses, setAttendanceStatuses] = useState<Record<number, string>>(
-    initialAttendanceData.reduce((acc, student) => ({ ...acc, [student.id]: student.status }), {})
-  );
-  const [grades, setGrades] = useState<GradeRow[]>(initialGradesData);
+
+  const [classesData, setClassesData] = useState<ClassItem[]>(demoClasses);
+  const [selectedClass, setSelectedClass] = useState<ClassItem>(demoClasses[0]);
+  const [studentsForClass, setStudentsForClass] = useState<StudentItem[]>(demoStudents);
+  const [attendanceStatuses, setAttendanceStatuses] = useState<Record<number, string>>({});
+  const [grades, setGrades] = useState<GradeRow[]>(demoGrades);
   const [homeworks, setHomeworks] = useState<Homework[]>(initialHomeworkData);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("students");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection>(null);
 
@@ -86,48 +89,173 @@ export function ProfesorGestionAcademica() {
   const [viewingHomework, setViewingHomework] = useState<Homework | null>(null);
   const [hwForm, setHwForm] = useState({ title: "", dueDate: "", description: "" });
 
+  // ── Load teacher's classes on mount ────────────────────────
+  useEffect(() => {
+    if (!isSupabaseEnabled() || !user?.uid) return;
+    setLoading(true);
+    classesService.getByTeacher(user.uid).then((classes) => {
+      if (classes.length > 0) {
+        const mapped = classes.map((c) => ({
+          id: c.id,
+          name: `${c.subject} ${c.grade} ${c.section}`,
+          students: Number(c.student_count) || 0,
+        }));
+        setClassesData(mapped);
+        setSelectedClass(mapped[0]);
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [user]);
+
+  // ── Load students, attendance, grades, homework when class changes
+  const loadClassData = useCallback(async (classId: number) => {
+    if (!isSupabaseEnabled()) return;
+    const today = toISODate(new Date());
+
+    const [enrollments, attendanceRecords, gradeRecords, hwRecords] = await Promise.all([
+      classesService.getEnrollments(classId),
+      attendanceService.getByClassAndDate(classId, today),
+      gradesService.getByClass(classId),
+      homeworkService.getByClass(classId),
+    ]);
+
+    // Map enrollments to students list
+    const students: StudentItem[] = enrollments.map((e) => ({
+      id: e.student_id,
+      name: e.student_name,
+      status: "enrolled",
+    }));
+    setStudentsForClass(students);
+
+    // Map attendance records
+    const statusMap: Record<number, string> = {};
+    for (const r of attendanceRecords) {
+      statusMap[r.student_id] = r.status;
+    }
+    // Default to "present" for students without a record
+    for (const s of students) {
+      if (!statusMap[s.id]) statusMap[s.id] = "present";
+    }
+    setAttendanceStatuses(statusMap);
+
+    // Map grade records
+    if (gradeRecords.length > 0) {
+      setGrades(gradeRecords.map((g) => ({
+        id: g.student_id,
+        name: g.student_name,
+        exam1: Number(g.exam1) || 0,
+        exam2: Number(g.exam2) || 0,
+        homework: Number(g.homework) || 0,
+        average: Number(g.average) || 0,
+      })));
+    } else {
+      // No grades yet — initialize from enrolled students
+      setGrades(students.map((s) => ({
+        id: s.id,
+        name: s.name,
+        exam1: 0,
+        exam2: 0,
+        homework: 0,
+        average: 0,
+      })));
+    }
+
+    // Map homework
+    if (hwRecords.length > 0) {
+      setHomeworks(hwRecords.map((hw) => ({
+        id: hw.id,
+        title: hw.title,
+        dueDate: hw.due_date,
+        description: hw.description ?? "",
+        submitted: 0,
+        total: students.length,
+      })));
+    } else {
+      setHomeworks([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadClassData(selectedClass.id).catch(() => {});
+  }, [selectedClass, loadClassData]);
+
+  // ── Handlers ───────────────────────────────────────────────
   const handleSort = (key: string) => {
     const next = getNextSort(key, sortKey, sortDir);
     setSortKey(next.key);
     setSortDir(next.direction);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) { case "enrolled": return <Badge variant="success">Matriculado</Badge>; default: return <Badge variant="neutral">{status}</Badge>; }
-  };
-
-  const getAttendanceBadge = (status: string) => {
-    switch (status) { case "present": return <Badge variant="success">Presente</Badge>; case "absent": return <Badge variant="danger">Ausente</Badge>; case "late": return <Badge variant="warning">Tardanza</Badge>; default: return <Badge variant="neutral">{status}</Badge>; }
-  };
-
-  const getGradeColor = (grade: number) => {
-    if (grade >= 17) return "text-[#10b981]"; if (grade >= 14) return "text-[#f59e0b]"; return "text-[#dc2626]";
+  const handleClassChange = (cls: ClassItem) => {
+    setSelectedClass(cls);
+    setSortKey(null);
+    setSortDir(null);
   };
 
   const handleAttendanceChange = (studentId: number, status: string) => {
     setAttendanceStatuses(prev => ({ ...prev, [studentId]: status }));
   };
 
-  const handleSaveAttendance = () => {
-    showToast("Asistencia registrada exitosamente");
+  const handleSaveAttendance = async () => {
+    if (!isSupabaseEnabled()) {
+      showToast("Asistencia registrada exitosamente");
+      return;
+    }
+    setSaving(true);
+    try {
+      const today = toISODate(new Date());
+      const records = studentsForClass.map((s) => ({
+        class_id: selectedClass.id,
+        student_id: s.id,
+        date: today,
+        status: (attendanceStatuses[s.id] || "present") as "present" | "absent" | "late",
+      }));
+      const error = await attendanceService.upsertBatch(records);
+      if (error) throw new Error(error);
+      showToast("Asistencia registrada exitosamente");
+    } catch {
+      showToast("Error al guardar asistencia. Intenta de nuevo.", "error");
+    }
+    setSaving(false);
   };
 
   const handleGradeChange = (studentId: number, field: "exam1" | "exam2" | "homework", value: string) => {
     const numValue = Math.min(20, Math.max(0, parseFloat(value) || 0));
     setGrades(prev => prev.map(g => {
-      if (g.id === studentId) {
-        const updated = { ...g, [field]: numValue };
-        updated.average = parseFloat(((updated.exam1 + updated.exam2 + updated.homework) / 3).toFixed(1));
-        return updated;
-      }
-      return g;
+      if (g.id !== studentId) return g;
+      const updated = { ...g, [field]: numValue };
+      updated.average = parseFloat(((updated.exam1 + updated.exam2 + updated.homework) / 3).toFixed(1));
+      return updated;
     }));
   };
 
-  const handleSaveGrades = () => {
-    showToast("Calificaciones guardadas exitosamente");
+  const handleSaveGrades = async () => {
+    if (!isSupabaseEnabled()) {
+      showToast("Calificaciones guardadas exitosamente");
+      return;
+    }
+    setSaving(true);
+    try {
+      for (const g of grades) {
+        const error = await gradesService.upsert({
+          class_id: selectedClass.id,
+          student_id: g.id,
+          period: "bimestre_1",
+          exam1: g.exam1,
+          exam2: g.exam2,
+          homework: g.homework,
+          participation: 0,
+        });
+        if (error) throw new Error(error);
+      }
+      showToast("Calificaciones guardadas exitosamente");
+    } catch {
+      showToast("Error al guardar calificaciones. Intenta de nuevo.", "error");
+    }
+    setSaving(false);
   };
 
+  // ── Homework (local only — no DB table) ────────────────────
   const openCreateHomework = () => {
     setEditingHomework(null);
     setHwForm({ title: "", dueDate: "", description: "" });
@@ -145,27 +273,79 @@ export function ProfesorGestionAcademica() {
     setShowViewModal(true);
   };
 
-  const handleSaveHomework = () => {
+  const handleSaveHomework = async () => {
     if (!hwForm.title.trim() || !hwForm.dueDate) {
       showToast("Completa todos los campos obligatorios", "error");
       return;
     }
-    if (editingHomework) {
-      setHomeworks(prev => prev.map(h => h.id === editingHomework.id ? { ...h, title: hwForm.title, dueDate: hwForm.dueDate, description: hwForm.description } : h));
-      showToast("Tarea actualizada exitosamente");
-    } else {
-      const newHw: Homework = {
-        id: Math.max(...homeworks.map(h => h.id), 0) + 1,
-        title: hwForm.title,
-        dueDate: hwForm.dueDate,
-        description: hwForm.description,
-        submitted: 0,
-        total: selectedClass.students,
-      };
-      setHomeworks(prev => [...prev, newHw]);
-      showToast("Tarea creada exitosamente");
+    setSaving(true);
+    try {
+      if (editingHomework) {
+        if (isSupabaseEnabled()) {
+          const error = await homeworkService.update(editingHomework.id, {
+            title: hwForm.title,
+            description: hwForm.description || null,
+            due_date: hwForm.dueDate,
+          });
+          if (error) throw new Error(error);
+        }
+        setHomeworks(prev => prev.map(h => h.id === editingHomework.id ? { ...h, title: hwForm.title, dueDate: hwForm.dueDate, description: hwForm.description } : h));
+        showToast("Tarea actualizada exitosamente");
+      } else {
+        if (isSupabaseEnabled()) {
+          const { data, error } = await homeworkService.create({
+            class_id: selectedClass.id,
+            title: hwForm.title,
+            description: hwForm.description || null,
+            due_date: hwForm.dueDate,
+          });
+          if (error) throw new Error(error);
+          if (data) {
+            setHomeworks(prev => [...prev, { id: data.id, title: data.title, dueDate: data.due_date, description: data.description ?? "", submitted: 0, total: selectedClass.students }]);
+          }
+        } else {
+          const newHw: Homework = {
+            id: Math.max(...homeworks.map(h => h.id), 0) + 1,
+            title: hwForm.title, dueDate: hwForm.dueDate, description: hwForm.description,
+            submitted: 0, total: selectedClass.students,
+          };
+          setHomeworks(prev => [...prev, newHw]);
+        }
+        showToast("Tarea creada exitosamente");
+      }
+    } catch {
+      showToast("Error al guardar tarea. Intenta de nuevo.", "error");
     }
+    setSaving(false);
     setShowHomeworkModal(false);
+  };
+
+  const handleDeleteHomework = async (hwId: number) => {
+    setSaving(true);
+    try {
+      if (isSupabaseEnabled()) {
+        const error = await homeworkService.remove(hwId);
+        if (error) throw new Error(error);
+      }
+      setHomeworks(prev => prev.filter(h => h.id !== hwId));
+      showToast("Tarea eliminada");
+    } catch {
+      showToast("Error al eliminar tarea", "error");
+    }
+    setSaving(false);
+  };
+
+  // ── UI helpers ─────────────────────────────────────────────
+  const getStatusBadge = (status: string) => {
+    switch (status) { case "enrolled": return <Badge variant="success">Matriculado</Badge>; default: return <Badge variant="neutral">{status}</Badge>; }
+  };
+
+  const getAttendanceBadge = (status: string) => {
+    switch (status) { case "present": return <Badge variant="success">Presente</Badge>; case "absent": return <Badge variant="danger">Ausente</Badge>; case "late": return <Badge variant="warning">Tardanza</Badge>; default: return <Badge variant="neutral">{status}</Badge>; }
+  };
+
+  const getGradeColor = (grade: number) => {
+    if (grade >= 17) return "text-[#10b981]"; if (grade >= 14) return "text-[#f59e0b]"; return "text-[#dc2626]";
   };
 
   const tabs: { key: Tab; label: string; icon: typeof Users }[] = [
@@ -175,9 +355,10 @@ export function ProfesorGestionAcademica() {
     { key: "homework", label: "Tareas", icon: FileText },
   ];
 
-  const sortedStudentsData = sortData(studentsData, sortKey, sortDir);
-  const sortedAttendanceData = sortData(initialAttendanceData, sortKey, sortDir);
+  const sortedStudentsData = sortData(studentsForClass, sortKey, sortDir);
   const sortedGrades = sortData(grades, sortKey, sortDir);
+
+  if (loading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-6">
@@ -194,7 +375,7 @@ export function ProfesorGestionAcademica() {
         <h2 className="text-sm text-[#64748b] uppercase tracking-wider mb-3">Seleccionar Clase</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {classesData.map((classItem) => (
-            <button key={classItem.id} onClick={() => setSelectedClass(classItem)} className={`p-4 rounded-lg border-2 transition-all text-left ${selectedClass.id === classItem.id ? "border-[#2563eb] bg-[#eff6ff]" : "border-border bg-white hover:bg-[#f8fafc]"}`}>
+            <button key={classItem.id} onClick={() => handleClassChange(classItem)} className={`p-4 rounded-lg border-2 transition-all text-left ${selectedClass.id === classItem.id ? "border-[#2563eb] bg-[#eff6ff]" : "border-border bg-white hover:bg-[#f8fafc]"}`}>
               <h3 className="text-base text-[#1e293b] mb-1">{classItem.name}</h3>
               <div className="flex items-center gap-2 text-sm text-[#64748b]"><Users className="w-4 h-4" />{classItem.students} estudiantes</div>
             </button>
@@ -250,7 +431,9 @@ export function ProfesorGestionAcademica() {
                   <h3 className="text-lg text-[#1e293b] mb-1">Registro de Asistencia</h3>
                   <p className="text-sm text-[#64748b]">{selectedClass.name} - {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
-                <button onClick={handleSaveAttendance} className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors text-sm"><Save className="w-4 h-4" /> Registrar</button>
+                <button onClick={handleSaveAttendance} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors text-sm disabled:opacity-50">
+                  <Save className="w-4 h-4" /> {saving ? "Guardando..." : "Registrar"}
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -262,16 +445,16 @@ export function ProfesorGestionAcademica() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {sortedAttendanceData.map((student, index) => (
+                    {sortedStudentsData.map((student, index) => (
                       <tr key={student.id} className="hover:bg-[#f8fafc] transition-colors">
                         <td className="px-4 py-3"><span className="text-sm text-[#64748b]">{index + 1}</span></td>
                         <td className="px-4 py-3"><span className="text-sm text-[#1e293b]">{student.name}</span></td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <select value={attendanceStatuses[student.id]} onChange={(e) => handleAttendanceChange(student.id, e.target.value)} className="px-3 py-1.5 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]">
+                            <select value={attendanceStatuses[student.id] ?? "present"} onChange={(e) => handleAttendanceChange(student.id, e.target.value)} className="px-3 py-1.5 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]">
                               <option value="present">Presente</option><option value="absent">Ausente</option><option value="late">Tardanza</option>
                             </select>
-                            {getAttendanceBadge(attendanceStatuses[student.id])}
+                            {getAttendanceBadge(attendanceStatuses[student.id] ?? "present")}
                           </div>
                         </td>
                       </tr>
@@ -286,7 +469,9 @@ export function ProfesorGestionAcademica() {
             <div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
                 <h3 className="text-lg text-[#1e293b]">Calificaciones - {selectedClass.name}</h3>
-                <button onClick={handleSaveGrades} className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors text-sm"><Save className="w-4 h-4" /> Guardar</button>
+                <button onClick={handleSaveGrades} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors text-sm disabled:opacity-50">
+                  <Save className="w-4 h-4" /> {saving ? "Guardando..." : "Guardar"}
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -335,6 +520,7 @@ export function ProfesorGestionAcademica() {
                       <div className="flex gap-2">
                         <button onClick={() => openViewHomework(homework)} className="px-3 py-1.5 text-sm text-[#2563eb] hover:text-[#1d4ed8] transition-colors">Ver</button>
                         <button onClick={() => openEditHomework(homework)} className="px-3 py-1.5 text-sm text-[#64748b] hover:text-[#1e293b] transition-colors">Editar</button>
+                        <button onClick={() => handleDeleteHomework(homework.id)} disabled={saving} className="p-1.5 text-[#dc2626] hover:text-[#b91c1c] transition-colors disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                     <div className="mt-3">

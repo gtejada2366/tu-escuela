@@ -174,10 +174,11 @@ export function useClaseDetailData(id: string | undefined) {
   }, [id]);
 
   const addStudent = useCallback(async (name: string, code: string) => {
-    const newId = Math.max(0, ...students.map((s) => s.id)) + 1;
-    const newStudent: ClassStudent = { id: newId, name, code, attendance: 100, average: 0 };
-    setStudents((prev) => [...prev, newStudent]);
-  }, [students]);
+    setStudents((prev) => {
+      const newId = Math.max(0, ...prev.map((s) => s.id)) + 1;
+      return [...prev, { id: newId, name, code, attendance: 100, average: 0 }];
+    });
+  }, []);
 
   return { classInfo, setClassInfo, students, setStudents, loading, error, found, updateClassInfo, addStudent };
 }

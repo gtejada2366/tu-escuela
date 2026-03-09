@@ -20,12 +20,13 @@ async function getSummaryByDate(date: string): Promise<AttendanceSummary[]> {
 
 async function getByClassAndDate(classId: number, date: string): Promise<AttendanceRecord[]> {
   if (!supabase) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("attendance")
     .select("*")
     .eq("class_id", classId)
     .eq("date", date);
-  return data ?? [];
+  if (error) { console.error("attendance.getByClassAndDate:", error); return []; }
+  return data;
 }
 
 async function upsertBatch(records: AttendanceInsert[]): Promise<string | null> {

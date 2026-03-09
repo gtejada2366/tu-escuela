@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { isSupabaseEnabled } from "../lib/supabase";
+import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import { studentsService } from "../services/students.service";
 
 export interface StudentLocal {
@@ -38,23 +38,48 @@ export function useStudentsData() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseEnabled()) return;
+    if (!isSupabaseEnabled() || !supabase) return;
     setLoading(true);
     setError(null);
-    studentsService.getAll().then((data) => {
+
+    Promise.all([
+      studentsService.getAll(),
+      supabase.from("payments").select("student_id, status"),
+      supabase.from("attendance").select("student_id, status"),
+    ]).then(([data, paymentsResult, attendanceResult]) => {
       if (data.length > 0) {
-        setStudents(data.map((s) => ({
-          id: s.id,
-          name: s.name,
-          grade: s.grade,
-          section: s.section,
-          parent: s.parent_name ?? "",
-          paymentStatus: "paid",
-          attendance: 95,
-          avatar: generateAvatar(s.name),
-          phone: s.parent_phone ?? "",
-          address: s.address ?? "",
-        })));
+        // Build payment status map: worst status per student (overdue > pending > paid)
+        const paymentMap: Record<number, string> = {};
+        for (const p of paymentsResult.data ?? []) {
+          const cur = paymentMap[p.student_id];
+          if (!cur || p.status === "overdue" || (p.status === "pending" && cur !== "overdue")) {
+            paymentMap[p.student_id] = p.status;
+          }
+        }
+
+        // Build attendance percentage map
+        const attMap: Record<number, { total: number; present: number }> = {};
+        for (const a of attendanceResult.data ?? []) {
+          if (!attMap[a.student_id]) attMap[a.student_id] = { total: 0, present: 0 };
+          attMap[a.student_id].total++;
+          if (a.status === "present" || a.status === "late") attMap[a.student_id].present++;
+        }
+
+        setStudents(data.map((s) => {
+          const att = attMap[s.id];
+          return {
+            id: s.id,
+            name: s.name,
+            grade: s.grade,
+            section: s.section,
+            parent: s.parent_name ?? "",
+            paymentStatus: paymentMap[s.id] ?? "paid",
+            attendance: att ? parseFloat(((att.present / att.total) * 100).toFixed(1)) : 100,
+            avatar: generateAvatar(s.name),
+            phone: s.parent_phone ?? "",
+            address: s.address ?? "",
+          };
+        }));
       }
       setLoading(false);
     }).catch(() => {
