@@ -45,6 +45,8 @@ export function Profesores() {
 
   // Form state
   const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formPassword, setFormPassword] = useState("");
   const [formSubject, setFormSubject] = useState(SUBJECTS[0]);
   const [formGrades, setFormGrades] = useState("");
   const [formPhone, setFormPhone] = useState("");
@@ -120,6 +122,8 @@ export function Profesores() {
   const handleOpenAdd = () => {
     setEditingProfessor(null);
     setFormName("");
+    setFormEmail("");
+    setFormPassword("");
     setFormSubject(SUBJECTS[0]);
     setFormGrades("");
     setFormPhone("");
@@ -174,9 +178,19 @@ export function Profesores() {
         return;
       }
     } else {
+      if (!formEmail.trim() || !formPassword.trim()) {
+        showToast("El correo y la contraseña son obligatorios", "error");
+        return;
+      }
+      if (formPassword.trim().length < 6) {
+        showToast("La contraseña debe tener al menos 6 caracteres", "error");
+        return;
+      }
       try {
         await addProfessor({
           name: formName.trim(),
+          email: formEmail.trim(),
+          password: formPassword.trim(),
           subject: formSubject,
           grades: formGrades.trim(),
           phone: formPhone.trim(),
@@ -184,8 +198,8 @@ export function Profesores() {
           status: formStatus,
         });
         showToast("Profesor agregado correctamente", "success");
-      } catch {
-        showToast("Error al guardar. Intenta de nuevo.", "error");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al guardar. Intenta de nuevo.", "error");
         return;
       }
     }
@@ -412,6 +426,31 @@ export function Profesores() {
               className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
             />
           </div>
+
+          {!editingProfessor && (
+            <>
+              <div>
+                <label className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
+                <input
+                  type="email"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  placeholder="profesor@correo.edu.pe"
+                  className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#1e293b] mb-1">Contraseña</label>
+                <input
+                  type="password"
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <label className="block text-sm text-[#1e293b] mb-1">Materia</label>

@@ -265,13 +265,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── User management (Director) ──────────────────────────
   const addUser = useCallback(async (userData: Omit<RegisteredUser, "id" | "avatar">) => {
     if (supabase) {
-      // In Supabase mode, create via Auth API
+      // Save the director's session before signUp (signUp auto-signs-in the new user)
+      const { data: { session: directorSession } } = await supabase.auth.getSession();
+
       const { error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: { data: { name: userData.name, role: userData.role } },
       });
       if (error) throw new Error(error.message);
+
+      // Restore the director's session so they stay logged in
+      if (directorSession) {
+        await supabase.auth.setSession({
+          access_token: directorSession.access_token,
+          refresh_token: directorSession.refresh_token,
+        });
+      }
+
       // Profile is auto-created by trigger — reload registry
       const profiles = await fetchSupabaseProfiles();
       setUsersRegistry(profiles);

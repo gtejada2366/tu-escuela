@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { isSupabaseEnabled } from "../lib/supabase";
+import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import { authService } from "../services/auth.service";
 import { classesService } from "../services/classes.service";
 
@@ -86,17 +86,28 @@ export function useProfesoresData() {
     });
   }, []);
 
-  const addProfessor = useCallback(async (data: Omit<Professor, "id" | "avatar" | "classes">) => {
+  const addProfessor = useCallback(async (data: Omit<Professor, "id" | "avatar" | "classes"> & { email?: string; password?: string }) => {
     const avatar = generateAvatar(data.name);
 
-    if (isSupabaseEnabled()) {
+    if (isSupabaseEnabled() && supabase && data.email && data.password) {
+      // Save the director's session before signUp (signUp auto-signs-in the new user)
+      const { data: { session: directorSession } } = await supabase.auth.getSession();
+
       const err = await authService.createUser({
         name: data.name,
-        email: `${data.name.toLowerCase().replace(/\s+/g, ".")}@escuela.edu.pe`,
-        password: "Temporal123!",
+        email: data.email,
+        password: data.password,
         role: "profesor",
       });
-      if (err) console.error("addProfessor:", err);
+      if (err) throw new Error(err);
+
+      // Restore the director's session so they stay logged in
+      if (directorSession) {
+        await supabase.auth.setSession({
+          access_token: directorSession.access_token,
+          refresh_token: directorSession.refresh_token,
+        });
+      }
     }
 
     const newId = Math.max(0, ...professors.map((p) => p.id)) + 1;
