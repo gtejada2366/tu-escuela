@@ -37,6 +37,23 @@ export const SUBJECTS = [
   "Arte y Cultura",
 ];
 
+export const GRADES = [
+  "3 años",
+  "4 años",
+  "5 años",
+  "1° Primaria",
+  "2° Primaria",
+  "3° Primaria",
+  "4° Primaria",
+  "5° Primaria",
+  "6° Primaria",
+  "1° Secundaria",
+  "2° Secundaria",
+  "3° Secundaria",
+  "4° Secundaria",
+  "5° Secundaria",
+];
+
 export function generateAvatar(name: string): string {
   const parts = name.trim().split(/\s+/);
   const first = parts[0]?.[0]?.toUpperCase() ?? "";

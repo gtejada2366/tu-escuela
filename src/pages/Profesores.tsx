@@ -5,7 +5,7 @@ import { Modal } from "../components/Modal";
 import { useToast } from "../components/Toast";
 import { SortableHeader, sortData, getNextSort, type SortDirection } from "../components/SortableHeader";
 import { Search, Filter, Plus, ChevronDown } from "lucide-react";
-import { useProfesoresData, SUBJECTS, type Professor } from "../hooks/useProfesoresData";
+import { useProfesoresData, SUBJECTS, GRADES, type Professor } from "../hooks/useProfesoresData";
 import { isValidPhone } from "../lib/validation";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 
@@ -47,11 +47,27 @@ export function Profesores() {
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
-  const [formSubject, setFormSubject] = useState(SUBJECTS[0]);
-  const [formGrades, setFormGrades] = useState("");
+  const [formSubjects, setFormSubjects] = useState<string[]>([]);
+  const [formGrades, setFormGrades] = useState<string[]>([]);
   const [formPhone, setFormPhone] = useState("");
   const [formAddress, setFormAddress] = useState("");
   const [formStatus, setFormStatus] = useState<"active" | "inactive">("active");
+
+  // Dropdown open state
+  const [subjectsOpen, setSubjectsOpen] = useState(false);
+  const [gradesOpen, setGradesOpen] = useState(false);
+  const subjectsRef = useRef<HTMLDivElement>(null);
+  const gradesRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (subjectsRef.current && !subjectsRef.current.contains(e.target as Node)) setSubjectsOpen(false);
+      if (gradesRef.current && !gradesRef.current.contains(e.target as Node)) setGradesOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -124,8 +140,8 @@ export function Profesores() {
     setFormName("");
     setFormEmail("");
     setFormPassword("");
-    setFormSubject(SUBJECTS[0]);
-    setFormGrades("");
+    setFormSubjects([]);
+    setFormGrades([]);
     setFormPhone("");
     setFormAddress("");
     setFormStatus("active");
@@ -136,8 +152,8 @@ export function Profesores() {
   const handleOpenEdit = (professor: Professor) => {
     setEditingProfessor(professor);
     setFormName(professor.name);
-    setFormSubject(professor.subject);
-    setFormGrades(professor.grades);
+    setFormSubjects(professor.subject.split(", ").filter(Boolean));
+    setFormGrades(professor.grades.split(", ").filter(Boolean));
     setFormPhone(professor.phone);
     setFormAddress(professor.address);
     setFormStatus(professor.status);
@@ -152,22 +168,29 @@ export function Profesores() {
       showToast("El nombre es obligatorio", "error");
       return;
     }
-    if (!formGrades.trim()) {
-      showToast("Los grados son obligatorios", "error");
+    if (formSubjects.length === 0) {
+      showToast("Selecciona al menos una materia", "error");
+      return;
+    }
+    if (formGrades.length === 0) {
+      showToast("Selecciona al menos un grado", "error");
       return;
     }
 
-    if (!isValidPhone(formPhone)) {
+    if (formPhone && !isValidPhone(formPhone)) {
       showToast("Formato de teléfono no válido", "error");
       return;
     }
+
+    const subjectStr = formSubjects.join(", ");
+    const gradesStr = formGrades.join(", ");
 
     if (editingProfessor) {
       try {
         await updateProfessor(editingProfessor.id, {
           name: formName.trim(),
-          subject: formSubject,
-          grades: formGrades.trim(),
+          subject: subjectStr,
+          grades: gradesStr,
           phone: formPhone.trim(),
           address: formAddress.trim(),
           status: formStatus,
@@ -191,8 +214,8 @@ export function Profesores() {
           name: formName.trim(),
           email: formEmail.trim(),
           password: formPassword.trim(),
-          subject: formSubject,
-          grades: formGrades.trim(),
+          subject: subjectStr,
+          grades: gradesStr,
           phone: formPhone.trim(),
           address: formAddress.trim(),
           status: formStatus,
@@ -452,30 +475,66 @@ export function Profesores() {
             </>
           )}
 
-          <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Materia</label>
-            <select
-              value={formSubject}
-              onChange={(e) => setFormSubject(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
+          <div ref={subjectsRef}>
+            <label className="block text-sm text-[#1e293b] mb-1">Materias</label>
+            <button
+              type="button"
+              onClick={() => { setSubjectsOpen((v) => !v); setGradesOpen(false); }}
+              className="w-full px-4 py-2 rounded-lg border border-border bg-white text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb] flex items-center justify-between"
             >
-              {SUBJECTS.map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
-                </option>
-              ))}
-            </select>
+              <span className={formSubjects.length ? "text-[#1e293b]" : "text-[#94a3b8]"}>
+                {formSubjects.length ? formSubjects.join(", ") : "Seleccionar materias..."}
+              </span>
+              <ChevronDown className="w-4 h-4 text-[#64748b] shrink-0" />
+            </button>
+            {subjectsOpen && (
+              <div className="mt-1 w-full bg-white rounded-lg border border-border shadow-lg z-20 max-h-48 overflow-y-auto">
+                {SUBJECTS.map((subject) => (
+                  <label key={subject} className="flex items-center gap-2 px-4 py-2 hover:bg-[#f8fafc] cursor-pointer text-sm text-[#1e293b]">
+                    <input
+                      type="checkbox"
+                      checked={formSubjects.includes(subject)}
+                      onChange={() => setFormSubjects((prev) =>
+                        prev.includes(subject) ? prev.filter((s) => s !== subject) : [...prev, subject]
+                      )}
+                      className="rounded border-[#e2e8f0] text-[#2563eb] focus:ring-[#2563eb]"
+                    />
+                    {subject}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div>
+          <div ref={gradesRef}>
             <label className="block text-sm text-[#1e293b] mb-1">Grados</label>
-            <input
-              type="text"
-              value={formGrades}
-              onChange={(e) => setFormGrades(e.target.value)}
-              placeholder="Ej: 1°, 2°, 3°"
-              className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
-            />
+            <button
+              type="button"
+              onClick={() => { setGradesOpen((v) => !v); setSubjectsOpen(false); }}
+              className="w-full px-4 py-2 rounded-lg border border-border bg-white text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb] flex items-center justify-between"
+            >
+              <span className={formGrades.length ? "text-[#1e293b]" : "text-[#94a3b8]"}>
+                {formGrades.length ? formGrades.join(", ") : "Seleccionar grados..."}
+              </span>
+              <ChevronDown className="w-4 h-4 text-[#64748b] shrink-0" />
+            </button>
+            {gradesOpen && (
+              <div className="mt-1 w-full bg-white rounded-lg border border-border shadow-lg z-20 max-h-48 overflow-y-auto">
+                {GRADES.map((grade) => (
+                  <label key={grade} className="flex items-center gap-2 px-4 py-2 hover:bg-[#f8fafc] cursor-pointer text-sm text-[#1e293b]">
+                    <input
+                      type="checkbox"
+                      checked={formGrades.includes(grade)}
+                      onChange={() => setFormGrades((prev) =>
+                        prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]
+                      )}
+                      className="rounded border-[#e2e8f0] text-[#2563eb] focus:ring-[#2563eb]"
+                    />
+                    {grade}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
