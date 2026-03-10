@@ -193,7 +193,7 @@ const professorsMap: Record<string, ProfessorProfile> = {
 export function useProfesorProfileData(id: string | undefined) {
   const professorFromMap = professorsMap[id ?? ""] ?? null;
   const [professor, setProfessor] = useState<ProfessorProfile | null>(professorFromMap);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(isSupabaseEnabled() && !!id);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

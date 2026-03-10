@@ -152,8 +152,8 @@ export function Profesores() {
   const handleOpenEdit = (professor: Professor) => {
     setEditingProfessor(professor);
     setFormName(professor.name);
-    setFormSubjects(professor.subject.split(", ").filter(Boolean));
-    setFormGrades(professor.grades.split(", ").filter(Boolean));
+    setFormSubjects(professor.subject === "Sin asignar" ? [] : professor.subject.split(", ").filter(Boolean));
+    setFormGrades(professor.grades === "Sin asignar" ? [] : professor.grades.split(", ").filter(Boolean));
     setFormPhone(professor.phone);
     setFormAddress(professor.address);
     setFormStatus(professor.status);

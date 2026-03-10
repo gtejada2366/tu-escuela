@@ -203,28 +203,32 @@ export function ProfesorProfile() {
           <h2 className="text-lg text-[#1e293b]">Clases Asignadas</h2>
           <Link to={`/profesores/${id}/gestion`} className="text-sm text-[#2563eb] hover:text-[#1d4ed8] transition-colors">Gestionar Clases →</Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#f8fafc] border-b border-border">
-              <tr>
-                <SortableHeader label="Curso" sortKey="course" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="px-4" />
-                <SortableHeader label="Grado" sortKey="grade" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="px-4" />
-                <SortableHeader label="Sección" sortKey="section" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="px-4" />
-                <SortableHeader label="Horario" sortKey="schedule" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="px-4" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {sortedClasses.map((classItem, index) => (
-                <tr key={index} className="hover:bg-[#f8fafc] transition-colors">
-                  <td className="px-4 py-3"><span className="text-sm text-[#1e293b]">{classItem.course}</span></td>
-                  <td className="px-4 py-3"><span className="text-sm text-[#1e293b]">{classItem.grade}</span></td>
-                  <td className="px-4 py-3"><span className="text-sm text-[#1e293b]">{classItem.section}</span></td>
-                  <td className="px-4 py-3"><div className="flex items-center gap-2 text-sm text-[#64748b]"><Clock className="w-4 h-4" />{classItem.schedule}</div></td>
+        {sortedClasses.length === 0 ? (
+          <p className="text-sm text-[#94a3b8] py-4">No tiene clases asignadas en el sistema. Las materias y grados asignados se muestran en la sección de información personal.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-[#f8fafc] border-b border-border">
+                <tr>
+                  <SortableHeader label="Curso" sortKey="course" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="px-4" />
+                  <SortableHeader label="Grado" sortKey="grade" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="px-4" />
+                  <SortableHeader label="Sección" sortKey="section" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="px-4" />
+                  <SortableHeader label="Horario" sortKey="schedule" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="px-4" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {sortedClasses.map((classItem, index) => (
+                  <tr key={index} className="hover:bg-[#f8fafc] transition-colors">
+                    <td className="px-4 py-3"><span className="text-sm text-[#1e293b]">{classItem.course}</span></td>
+                    <td className="px-4 py-3"><span className="text-sm text-[#1e293b]">{classItem.grade}</span></td>
+                    <td className="px-4 py-3"><span className="text-sm text-[#1e293b]">{classItem.section}</span></td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-2 text-sm text-[#64748b]"><Clock className="w-4 h-4" />{classItem.schedule}</div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-lg border border-border shadow-sm p-6">
