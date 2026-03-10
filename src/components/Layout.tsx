@@ -19,6 +19,7 @@ import {
   LogOut,
   UserCircle,
   Settings,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useSchoolConfig } from "../contexts/SchoolConfigContext";
@@ -27,6 +28,7 @@ const allMenuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", roles: ["director", "profesor"] },
   { icon: Users, label: "Estudiantes", path: "/estudiantes", roles: ["director"] },
   { icon: GraduationCap, label: "Profesores", path: "/profesores", roles: ["director"] },
+  { icon: Layers, label: "Grados", path: "/grados", roles: ["director", "profesor"] },
   { icon: BookOpen, label: "Clases", path: "/clases", roles: ["director", "profesor"] },
   { icon: ClipboardCheck, label: "Asistencia", path: "/asistencia", roles: ["director", "profesor"] },
   { icon: FileText, label: "Calificaciones", path: "/calificaciones", roles: ["director", "profesor"] },

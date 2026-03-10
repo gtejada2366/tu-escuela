@@ -8,6 +8,7 @@ import { Payments } from "./pages/Payments";
 import { Profesores } from "./pages/Profesores";
 import { ProfesorProfile } from "./pages/ProfesorProfile";
 import { ProfesorGestionAcademica } from "./pages/ProfesorGestionAcademica";
+import { Grados } from "./pages/Grados";
 import { Clases } from "./pages/Clases";
 import { ClaseDetail } from "./pages/ClaseDetail";
 import { Calificaciones } from "./pages/Calificaciones";
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: "profesores", Component: Profesores },
       { path: "profesores/:id", Component: ProfesorProfile },
       { path: "profesores/:id/gestion", Component: ProfesorGestionAcademica },
+      { path: "grados", Component: Grados },
       { path: "clases", Component: Clases },
       { path: "clases/:id", Component: ClaseDetail },
       { path: "asistencia", Component: Attendance },
