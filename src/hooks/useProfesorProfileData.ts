@@ -240,12 +240,14 @@ export function useProfesorProfileData(id: string | undefined) {
 
       const derivedSubjects = subjects.join(", ");
       const derivedGrades = [...new Set(teacherClasses.map((c) => `${c.grade} ${c.section}`))].join(", ");
+      const cleanSpecializations = profile.specializations?.split(", ").filter((s) => s && s !== "Sin asignar").join(", ") || "";
+      const cleanGrades = profile.assigned_grades?.split(", ").filter((s) => s && s !== "Sin asignar").join(", ") || "";
 
       const mapped: ProfessorProfile = {
         id: Number(id),
         name: profile.name,
-        subject: profile.specializations || derivedSubjects || "Sin asignar",
-        grades: profile.assigned_grades || derivedGrades || "Sin asignar",
+        subject: cleanSpecializations || derivedSubjects || "Sin asignar",
+        grades: cleanGrades || derivedGrades || "Sin asignar",
         status: profile.status as string,
         avatar: profile.avatar ?? profile.name.substring(0, 2).toUpperCase(),
         info: {

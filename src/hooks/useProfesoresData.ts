@@ -84,12 +84,15 @@ export function useProfesoresData() {
           // Use stored specializations/grades, fallback to derived from classes
           const derivedSubjects = [...new Set(teacherClasses.map((c) => c.subject))].join(", ");
           const derivedGrades = [...new Set(teacherClasses.map((c) => `${c.grade} ${c.section}`))].join(", ");
+          // Clean stored values: remove "Sin asignar" entries that may have been saved erroneously
+          const cleanSpecializations = p.specializations?.split(", ").filter((s) => s && s !== "Sin asignar").join(", ") || "";
+          const cleanGrades = p.assigned_grades?.split(", ").filter((s) => s && s !== "Sin asignar").join(", ") || "";
           return {
             id: idx + 1,
             uid: p.id,
             name: p.name,
-            subject: p.specializations || derivedSubjects || "Sin asignar",
-            grades: p.assigned_grades || derivedGrades || "Sin asignar",
+            subject: cleanSpecializations || derivedSubjects || "Sin asignar",
+            grades: cleanGrades || derivedGrades || "Sin asignar",
             classes: teacherClasses.length,
             status: p.status as "active" | "inactive",
             avatar: p.avatar ?? generateAvatar(p.name),
