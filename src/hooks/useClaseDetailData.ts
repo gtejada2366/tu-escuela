@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { isSupabaseEnabled } from "../lib/supabase";
+import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import { classesService } from "../services/classes.service";
 
 export interface ClassInfo {
@@ -125,7 +125,9 @@ export function useClaseDetailData(id: string | undefined) {
     Promise.all([
       classesService.getById(numId),
       classesService.getEnrollments(numId),
-    ]).then(([cls, enrollments]) => {
+      supabase ? supabase.from("attendance").select("student_id, status").eq("class_id", numId) : Promise.resolve({ data: [] }),
+      supabase ? supabase.from("grades").select("student_id, average").eq("class_id", numId) : Promise.resolve({ data: [] }),
+    ]).then(([cls, enrollments, attRes, gradesRes]) => {
       if (cls) {
         setClassInfo({
           id: cls.id,
@@ -140,13 +142,37 @@ export function useClaseDetailData(id: string | undefined) {
           status: cls.status,
         });
 
-        const mapped = enrollments.map((e) => ({
-          id: e.student_id,
-          name: e.student_name,
-          code: `EST-${String(e.student_id).padStart(3, "0")}`,
-          attendance: 95,
-          average: 16,
-        }));
+        // Build attendance map per student
+        const attMap: Record<number, { total: number; present: number }> = {};
+        for (const a of (attRes as any).data ?? []) {
+          if (!attMap[a.student_id]) attMap[a.student_id] = { total: 0, present: 0 };
+          attMap[a.student_id].total++;
+          if (a.status === "present" || a.status === "late") attMap[a.student_id].present++;
+        }
+
+        // Build average grade map per student
+        const gradeMap: Record<number, { sum: number; count: number }> = {};
+        for (const g of (gradesRes as any).data ?? []) {
+          if (!gradeMap[g.student_id]) gradeMap[g.student_id] = { sum: 0, count: 0 };
+          gradeMap[g.student_id].sum += Number(g.average) || 0;
+          gradeMap[g.student_id].count++;
+        }
+
+        const mapped = enrollments.map((e) => {
+          const att = attMap[e.student_id];
+          const gr = gradeMap[e.student_id];
+          return {
+            id: e.student_id,
+            name: e.student_name,
+            code: `EST-${String(e.student_id).padStart(3, "0")}`,
+            attendance: att && att.total > 0
+              ? Math.round((att.present / att.total) * 1000) / 10
+              : 0,
+            average: gr && gr.count > 0
+              ? Math.round((gr.sum / gr.count) * 10) / 10
+              : 0,
+          };
+        });
         if (mapped.length > 0) setStudents(mapped);
         setFound(true);
       }

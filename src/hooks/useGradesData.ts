@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { isSupabaseEnabled } from "../lib/supabase";
+import { classesService } from "../services/classes.service";
 import { gradesService } from "../services/grades.service";
+import { useAuth } from "../contexts/AuthContext";
 
 export interface GradeStudent {
   id: number;
@@ -37,11 +39,32 @@ const demoStudents: GradeStudent[] = [
 ];
 
 export function useGradesData() {
-  const [availableClasses] = useState<GradeClass[]>(demoClasses);
+  const { user, isProfesor } = useAuth();
+  const [availableClasses, setAvailableClasses] = useState<GradeClass[]>(demoClasses);
   const [selectedClass, setSelectedClass] = useState<GradeClass>(demoClasses[0]);
   const [studentsData, setStudentsData] = useState<GradeStudent[]>(demoStudents);
   const [loading, setLoading] = useState(false);
 
+  // Load classes list from Supabase
+  useEffect(() => {
+    if (!isSupabaseEnabled()) return;
+    const fetch = isProfesor && user?.uid
+      ? classesService.getByTeacher(user.uid)
+      : classesService.getAll();
+    fetch.then((data) => {
+      if (data.length > 0) {
+        const mapped = data.map((c) => ({
+          id: c.id,
+          name: `${c.subject} ${c.grade} ${c.section}`,
+          students: Number(c.student_count) || 0,
+        }));
+        setAvailableClasses(mapped);
+        setSelectedClass(mapped[0]);
+      }
+    }).catch(() => {});
+  }, [isProfesor, user]);
+
+  // Load grades for selected class
   useEffect(() => {
     if (!isSupabaseEnabled()) return;
     setLoading(true);
@@ -57,6 +80,8 @@ export function useGradesData() {
           average: Number(g.average) || 0,
           grades: [],
         })));
+      } else {
+        setStudentsData([]);
       }
       setLoading(false);
     }).catch(() => {
