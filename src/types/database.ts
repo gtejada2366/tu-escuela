@@ -97,6 +97,10 @@ export type Profile = {
   role: "director" | "profesor";
   avatar: string | null;
   status: "active" | "inactive";
+  phone: string | null;
+  address: string | null;
+  specializations: string | null;
+  assigned_grades: string | null;
   created_at: string;
   updated_at: string;
 };

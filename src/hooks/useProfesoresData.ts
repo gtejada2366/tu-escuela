@@ -79,19 +79,20 @@ export function useProfesoresData() {
       if (professorProfiles.length > 0) {
         const mapped = professorProfiles.map((p, idx) => {
           const teacherClasses = classes.filter((c) => c.teacher_id === p.id);
-          const subjects = [...new Set(teacherClasses.map((c) => c.subject))];
-          const grades = [...new Set(teacherClasses.map((c) => `${c.grade} ${c.section}`))];
+          // Use stored specializations/grades, fallback to derived from classes
+          const derivedSubjects = [...new Set(teacherClasses.map((c) => c.subject))].join(", ");
+          const derivedGrades = [...new Set(teacherClasses.map((c) => `${c.grade} ${c.section}`))].join(", ");
           return {
             id: idx + 1,
             uid: p.id,
             name: p.name,
-            subject: subjects.join(", ") || "Sin asignar",
-            grades: grades.join(", ") || "Sin asignar",
+            subject: p.specializations || derivedSubjects || "Sin asignar",
+            grades: p.assigned_grades || derivedGrades || "Sin asignar",
             classes: teacherClasses.length,
             status: p.status as "active" | "inactive",
             avatar: p.avatar ?? generateAvatar(p.name),
-            phone: "",
-            address: "",
+            phone: p.phone ?? "",
+            address: p.address ?? "",
           };
         });
         setProfessors(mapped);
@@ -125,6 +126,22 @@ export function useProfesoresData() {
           refresh_token: directorSession.refresh_token,
         });
       }
+
+      // Save specializations, grades, phone, address to the new profile
+      // Find the new profile by email
+      const { data: newProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", data.email)
+        .maybeSingle();
+      if (newProfile) {
+        await authService.updateUser(newProfile.id, {
+          specializations: data.subject || null,
+          assigned_grades: data.grades || null,
+          phone: data.phone || null,
+          address: data.address || null,
+        });
+      }
     }
 
     const newId = Math.max(0, ...professors.map((p) => p.id)) + 1;
@@ -142,6 +159,10 @@ export function useProfesoresData() {
         await authService.updateUser(prof.uid, {
           ...(data.name && { name: data.name }),
           ...(data.status && { status: data.status }),
+          ...(data.subject !== undefined && { specializations: data.subject || null }),
+          ...(data.grades !== undefined && { assigned_grades: data.grades || null }),
+          ...(data.phone !== undefined && { phone: data.phone || null }),
+          ...(data.address !== undefined && { address: data.address || null }),
         });
       }
     }
