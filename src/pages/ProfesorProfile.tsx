@@ -124,7 +124,8 @@ export function ProfesorProfile() {
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
               <div>
                 <h1 className="text-2xl text-[#1e293b] mb-2">{professor.name}</h1>
-                <p className="text-sm text-[#64748b] mb-3">{professor.subject}</p>
+                <p className="text-sm text-[#64748b] mb-1">{professor.subject}</p>
+                <p className="text-sm text-[#94a3b8] mb-3">{professor.grades}</p>
                 {getStatusBadge(professor.status)}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -188,10 +189,11 @@ export function ProfesorProfile() {
         <h2 className="text-lg text-[#1e293b] mb-4">Información Personal</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Nombre Completo</p><p className="text-sm text-[#1e293b]">{professor.info.fullName}</p></div>
-          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Documento de Identidad</p><p className="text-sm text-[#1e293b]">{professor.info.dni}</p></div>
-          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Teléfono</p><p className="text-sm text-[#1e293b]">{professor.info.phone}</p></div>
-          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Email</p><p className="text-sm text-[#1e293b]">{professor.info.email}</p></div>
-          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Dirección</p><p className="text-sm text-[#1e293b]">{professor.info.address}</p></div>
+          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Materias</p><p className="text-sm text-[#1e293b]">{professor.subject || "Sin asignar"}</p></div>
+          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Grados Asignados</p><p className="text-sm text-[#1e293b]">{professor.grades || "Sin asignar"}</p></div>
+          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Teléfono</p><p className="text-sm text-[#1e293b]">{professor.info.phone || "—"}</p></div>
+          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Email</p><p className="text-sm text-[#1e293b]">{professor.info.email || "—"}</p></div>
+          <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Dirección</p><p className="text-sm text-[#1e293b]">{professor.info.address || "—"}</p></div>
           <div><p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Fecha de Ingreso</p><p className="text-sm text-[#1e293b]">{professor.info.joinDate}</p></div>
         </div>
       </div>

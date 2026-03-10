@@ -39,6 +39,7 @@ export interface ProfessorProfile {
   id: number;
   name: string;
   subject: string;
+  grades: string;
   status: string;
   avatar: string;
   info: ProfessorInfo;
@@ -49,7 +50,7 @@ export interface ProfessorProfile {
 
 const professorsMap: Record<string, ProfessorProfile> = {
   "1": {
-    id: 1, name: "Carlos Mendoza Ruiz", subject: "Matemáticas", status: "active", avatar: "CM",
+    id: 1, name: "Carlos Mendoza Ruiz", subject: "Matemáticas", grades: "3° Primaria, 4° Primaria, 1° Secundaria, 2° Secundaria", status: "active", avatar: "CM",
     info: { fullName: "Carlos Antonio Mendoza Ruiz", dni: "42345678", phone: "+51 987 654 321", email: "cmendoza@colegio.edu.pe", address: "Av. Los Pinos 456, San Isidro, Lima", joinDate: "15 de Marzo, 2020" },
     classes: [
       { course: "Matemática", grade: "3° Primaria", section: "A", schedule: "Lun-Mie-Vie 8:00-9:30" },
@@ -67,7 +68,7 @@ const professorsMap: Record<string, ProfessorProfile> = {
     metrics: { classesThisWeek: 12, averageAttendance: 94.5, evaluationsRegistered: 28 },
   },
   "2": {
-    id: 2, name: "Ana Sofía Reyes Torres", subject: "Comunicación", status: "active", avatar: "AR",
+    id: 2, name: "Ana Sofía Reyes Torres", subject: "Comunicación", grades: "1° Primaria, 2° Primaria, 3° Primaria", status: "active", avatar: "AR",
     info: { fullName: "Ana Sofía Reyes Torres", dni: "43567890", phone: "+51 976 543 210", email: "areyes@colegio.edu.pe", address: "Jr. Las Magnolias 789, Miraflores, Lima", joinDate: "10 de Agosto, 2019" },
     classes: [
       { course: "Comunicación", grade: "1° Primaria", section: "A", schedule: "Lun-Mie-Vie 8:00-9:30" },
@@ -84,7 +85,7 @@ const professorsMap: Record<string, ProfessorProfile> = {
     metrics: { classesThisWeek: 10, averageAttendance: 96.2, evaluationsRegistered: 22 },
   },
   "3": {
-    id: 3, name: "Roberto García Mendez", subject: "Ciencias", status: "active", avatar: "RG",
+    id: 3, name: "Roberto García Mendez", subject: "Ciencias", grades: "1° Secundaria, 2° Secundaria, 3° Secundaria", status: "active", avatar: "RG",
     info: { fullName: "Roberto Carlos García Mendez", dni: "41234567", phone: "+51 965 432 109", email: "rgarcia@colegio.edu.pe", address: "Calle San Martín 234, Surco, Lima", joinDate: "3 de Febrero, 2018" },
     classes: [
       { course: "Ciencias Naturales", grade: "1° Secundaria", section: "A", schedule: "Lun-Mie-Vie 8:00-9:30" },
@@ -102,7 +103,7 @@ const professorsMap: Record<string, ProfessorProfile> = {
     metrics: { classesThisWeek: 14, averageAttendance: 91.8, evaluationsRegistered: 30 },
   },
   "4": {
-    id: 4, name: "María Fernanda López", subject: "Historia", status: "inactive", avatar: "ML",
+    id: 4, name: "María Fernanda López", subject: "Historia", grades: "4° Secundaria, 5° Secundaria", status: "inactive", avatar: "ML",
     info: { fullName: "María Fernanda López Gutiérrez", dni: "40876543", phone: "+51 954 321 098", email: "mflopez@colegio.edu.pe", address: "Av. Arequipa 567, Lince, Lima", joinDate: "22 de Julio, 2017" },
     classes: [
       { course: "Historia del Perú", grade: "4° Secundaria", section: "A", schedule: "Lun-Mie-Vie 8:00-9:30" },
@@ -119,7 +120,7 @@ const professorsMap: Record<string, ProfessorProfile> = {
     metrics: { classesThisWeek: 8, averageAttendance: 89.3, evaluationsRegistered: 18 },
   },
   "5": {
-    id: 5, name: "José Luis Paredes Silva", subject: "Educación Física", status: "active", avatar: "JP",
+    id: 5, name: "José Luis Paredes Silva", subject: "Educación Física", grades: "3 años, 4 años, 5 años, 1° Primaria", status: "active", avatar: "JP",
     info: { fullName: "José Luis Paredes Silva", dni: "44321098", phone: "+51 943 210 987", email: "jparedes@colegio.edu.pe", address: "Jr. Cusco 890, Jesús María, Lima", joinDate: "5 de Enero, 2021" },
     classes: [
       { course: "Educación Física", grade: "3 años", section: "A", schedule: "Lun-Mie 8:00-9:00" },
@@ -137,7 +138,7 @@ const professorsMap: Record<string, ProfessorProfile> = {
     metrics: { classesThisWeek: 16, averageAttendance: 97.1, evaluationsRegistered: 15 },
   },
   "6": {
-    id: 6, name: "Patricia Campos Rojas", subject: "Inglés", status: "active", avatar: "PC",
+    id: 6, name: "Patricia Campos Rojas", subject: "Inglés", grades: "5 años, 1° Primaria, 2° Primaria", status: "active", avatar: "PC",
     info: { fullName: "Patricia Elena Campos Rojas", dni: "43210987", phone: "+51 932 109 876", email: "pcampos@colegio.edu.pe", address: "Av. La Marina 123, San Miguel, Lima", joinDate: "18 de Abril, 2020" },
     classes: [
       { course: "Inglés", grade: "5 años", section: "A", schedule: "Lun-Mie-Vie 8:00-9:00" },
@@ -154,7 +155,7 @@ const professorsMap: Record<string, ProfessorProfile> = {
     metrics: { classesThisWeek: 11, averageAttendance: 93.7, evaluationsRegistered: 25 },
   },
   "7": {
-    id: 7, name: "Fernando Díaz Castro", subject: "Arte y Cultura", status: "active", avatar: "FD",
+    id: 7, name: "Fernando Díaz Castro", subject: "Arte y Cultura", grades: "3 años, 4 años, 5 años", status: "active", avatar: "FD",
     info: { fullName: "Fernando Alejandro Díaz Castro", dni: "41098765", phone: "+51 921 098 765", email: "fdiaz@colegio.edu.pe", address: "Calle Los Laureles 456, Pueblo Libre, Lima", joinDate: "12 de Septiembre, 2022" },
     classes: [
       { course: "Arte y Cultura", grade: "3 años", section: "A", schedule: "Lun-Mie 8:00-9:00" },
@@ -171,7 +172,7 @@ const professorsMap: Record<string, ProfessorProfile> = {
     metrics: { classesThisWeek: 9, averageAttendance: 95.4, evaluationsRegistered: 12 },
   },
   "8": {
-    id: 8, name: "Gabriela Núñez Vega", subject: "Matemáticas", status: "active", avatar: "GN",
+    id: 8, name: "Gabriela Núñez Vega", subject: "Matemáticas", grades: "5° Primaria, 6° Primaria", status: "active", avatar: "GN",
     info: { fullName: "Gabriela Inés Núñez Vega", dni: "44567891", phone: "+51 910 987 654", email: "gnunez@colegio.edu.pe", address: "Av. Universitaria 789, San Martín de Porres, Lima", joinDate: "28 de Junio, 2023" },
     classes: [
       { course: "Matemática", grade: "5° Primaria", section: "A", schedule: "Lun-Mie-Vie 8:00-9:30" },
@@ -237,18 +238,22 @@ export function useProfesorProfileData(id: string | undefined) {
 
       const weeklySchedule = allDays.map((day) => ({ day, slots: daySlots[day] }));
 
+      const derivedSubjects = subjects.join(", ");
+      const derivedGrades = [...new Set(teacherClasses.map((c) => `${c.grade} ${c.section}`))].join(", ");
+
       const mapped: ProfessorProfile = {
         id: Number(id),
         name: profile.name,
-        subject: subjects.join(", ") || "Sin asignar",
+        subject: profile.specializations || derivedSubjects || "Sin asignar",
+        grades: profile.assigned_grades || derivedGrades || "Sin asignar",
         status: profile.status as string,
         avatar: profile.avatar ?? profile.name.substring(0, 2).toUpperCase(),
         info: {
           fullName: profile.name,
           dni: "",
-          phone: "",
-          email: "",
-          address: "",
+          phone: profile.phone ?? "",
+          email: profile.email ?? "",
+          address: profile.address ?? "",
           joinDate: new Date(profile.created_at).toLocaleDateString("es-PE", { year: "numeric", month: "long", day: "numeric" }),
         },
         classes: teacherClasses.map((c) => ({
