@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { isSupabaseEnabled } from "../lib/supabase";
+import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import { studentsService } from "../services/students.service";
 import { classesService } from "../services/classes.service";
 import { useAuth } from "../contexts/AuthContext";
@@ -117,10 +117,34 @@ export function useGradosData() {
 
         let students = allStudents;
 
-        // Professors: filter to only grades where they teach
-        if (isProfesor && classes) {
-          const allowedGrades = new Set(classes.map((c) => c.grade));
-          students = allStudents.filter((s) => allowedGrades.has(s.grade));
+        // Professors: filter to only grades where they teach or are assigned
+        if (isProfesor && user?.uid) {
+          const allowedGrades = new Set<string>();
+
+          // Grades from classes table
+          if (classes) {
+            for (const c of classes) allowedGrades.add(c.grade);
+          }
+
+          // Also include grades from profile.assigned_grades
+          if (supabase) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("assigned_grades")
+              .eq("id", user.uid)
+              .maybeSingle();
+            if (profile?.assigned_grades) {
+              for (const g of profile.assigned_grades.split(", ")) {
+                if (g && g !== "Sin asignar") allowedGrades.add(g);
+              }
+            }
+          }
+
+          if (allowedGrades.size > 0) {
+            students = allStudents.filter((s) => allowedGrades.has(s.grade));
+          } else {
+            students = [];
+          }
         }
 
         setGrades(buildGradeGroups(students.map((s) => ({

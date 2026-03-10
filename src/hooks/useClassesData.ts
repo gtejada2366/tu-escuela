@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { isSupabaseEnabled } from "../lib/supabase";
+import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import { classesService } from "../services/classes.service";
 import { useAuth, type RegisteredUser } from "../contexts/AuthContext";
 
@@ -51,10 +51,10 @@ export function useClassesData() {
   useEffect(() => {
     if (!isSupabaseEnabled()) return;
     setLoading(true);
-    const fetch = isProfesor && user?.uid
+    const fetchClasses = isProfesor && user?.uid
       ? classesService.getByTeacher(user.uid)
       : classesService.getAll();
-    fetch.then((data) => {
+    fetchClasses.then(async (data) => {
       if (data.length > 0) {
         setClasses(data.map((c) => ({
           id: c.id,
@@ -66,6 +66,42 @@ export function useClassesData() {
           schedule: c.schedule ?? "",
           status: c.status,
         })));
+      } else if (isProfesor && user?.uid && supabase) {
+        // No class records — build placeholder entries from profile
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("specializations, assigned_grades")
+          .eq("id", user.uid)
+          .maybeSingle();
+        if (profile) {
+          const subjects = (profile.specializations ?? "").split(", ").filter((s: string) => s && s !== "Sin asignar");
+          const grades = (profile.assigned_grades ?? "").split(", ").filter((s: string) => s && s !== "Sin asignar");
+          if (subjects.length > 0 && grades.length > 0) {
+            let idCounter = 1;
+            const placeholder: ClassLocal[] = [];
+            for (const subject of subjects) {
+              for (const grade of grades) {
+                placeholder.push({
+                  id: idCounter++,
+                  subject,
+                  grade,
+                  section: "",
+                  teacher: user.name,
+                  students: 0,
+                  schedule: "",
+                  status: "active",
+                });
+              }
+            }
+            setClasses(placeholder);
+          } else {
+            setClasses([]);
+          }
+        } else {
+          setClasses([]);
+        }
+      } else {
+        setClasses([]);
       }
       setLoading(false);
     }).catch(() => {
