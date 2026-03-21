@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
 import { ToastProvider } from "./components/Toast";
@@ -7,9 +7,11 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SchoolConfigProvider } from "./contexts/SchoolConfigContext";
 import { Login } from "./pages/Login";
 import { ResetPassword } from "./pages/ResetPassword";
+import { Landing } from "./pages/Landing";
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
 
   if (loading) {
     return (
@@ -24,7 +26,8 @@ function AppContent() {
 
   if (!user) {
     if (window.location.pathname === "/reset-password") return <ResetPassword />;
-    return <Login />;
+    if (showLogin) return <Login onBack={() => setShowLogin(false)} />;
+    return <Landing onLogin={() => setShowLogin(true)} />;
   }
 
   return (

@@ -3,7 +3,11 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSchoolConfig } from "../contexts/SchoolConfigContext";
 import { GraduationCap, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
-export function Login() {
+interface LoginProps {
+  onBack?: () => void;
+}
+
+export function Login({ onBack }: LoginProps) {
   const { login, resetPassword } = useAuth();
   const { schoolName, tagline, logoUrl } = useSchoolConfig();
 
@@ -185,7 +189,16 @@ export function Login() {
           )}
         </div>
 
-        <p className="text-center text-xs text-[#94a3b8] mt-6">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center justify-center gap-1 text-sm text-[#64748b] hover:text-[#2563eb] transition-colors mt-6 mx-auto"
+          >
+            <ArrowLeft className="w-4 h-4" /> Volver al inicio
+          </button>
+        )}
+
+        <p className="text-center text-xs text-[#94a3b8] mt-4">
           {schoolName} &mdash; {tagline}
         </p>
       </div>
