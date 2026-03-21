@@ -18,6 +18,8 @@ const Mensajeria = lazy(() => import("./pages/Mensajeria").then(m => ({ default:
 const Roles = lazy(() => import("./pages/Roles").then(m => ({ default: m.Roles })));
 const MiCuenta = lazy(() => import("./pages/MiCuenta").then(m => ({ default: m.MiCuenta })));
 const Configuracion = lazy(() => import("./pages/Configuracion").then(m => ({ default: m.Configuracion })));
+const MisHijos = lazy(() => import("./pages/MisHijos").then(m => ({ default: m.MisHijos })));
+const HijoDetalle = lazy(() => import("./pages/HijoDetalle").then(m => ({ default: m.HijoDetalle })));
 const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 
 export const router = createBrowserRouter([
@@ -41,6 +43,8 @@ export const router = createBrowserRouter([
       { path: "roles", Component: Roles },
       { path: "mi-cuenta", Component: MiCuenta },
       { path: "configuracion", Component: Configuracion },
+      { path: "mis-hijos", Component: MisHijos },
+      { path: "mis-hijos/:id", Component: HijoDetalle },
       { path: "*", Component: NotFound },
     ],
   },

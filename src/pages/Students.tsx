@@ -4,10 +4,11 @@ import { Badge } from "../components/Badge";
 import { Modal } from "../components/Modal";
 import { useToast } from "../components/Toast";
 import { SortableHeader, sortData, getNextSort, type SortDirection } from "../components/SortableHeader";
-import { Search, Filter, Plus, ChevronDown } from "lucide-react";
+import { Search, Filter, Plus, ChevronDown, Upload, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import { useStudentsData, type StudentLocal } from "../hooks/useStudentsData";
 import { isValidPhone } from "../lib/validation";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { parseCSV, importCSV, generateTemplateCSV, type CSVRow, type CSVImportResult } from "../lib/csvImport";
 
 type Student = StudentLocal;
 
@@ -38,6 +39,13 @@ export function Students() {
   const [deleteStudent, setDeleteStudent] = useState<Student | null>(null);
   const [formPhone, setFormPhone] = useState("");
   const [formAddress, setFormAddress] = useState("");
+
+  // CSV Import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [csvRows, setCsvRows] = useState<CSVRow[]>([]);
+  const [csvErrors, setCsvErrors] = useState<{ row: number; message: string }[]>([]);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvResult, setCsvResult] = useState<CSVImportResult | null>(null);
 
   const gradeDropdownRef = useRef<HTMLDivElement>(null);
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
@@ -243,6 +251,42 @@ export function Students() {
     ? paymentOptions.find((o) => o.value === paymentFilter)?.label || "Estado de Pago"
     : "Estado de Pago";
 
+  const handleCSVFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const { rows, errors } = parseCSV(text);
+    setCsvRows(rows);
+    setCsvErrors(errors);
+    setCsvResult(null);
+    e.target.value = "";
+  };
+
+  const handleCSVImport = async () => {
+    setCsvImporting(true);
+    const result = await importCSV(csvRows);
+    setCsvResult(result);
+    setCsvImporting(false);
+    if (result.created > 0) {
+      showToast(`${result.created} estudiantes importados`, "success");
+      // Reload page to refresh the list
+      window.location.reload();
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const csv = generateTemplateCSV();
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "plantilla_estudiantes.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -252,22 +296,30 @@ export function Students() {
           <h1 className="text-2xl text-[#1e293b] mb-2">Estudiantes</h1>
           <p className="text-sm text-[#64748b]">Gestiona todos los estudiantes del colegio</p>
         </div>
-        <button
-          onClick={() => {
-            setFormName("");
-            setFormGrade("");
-            setFormSection("");
-            setFormParent("");
-            setFormPaymentStatus("paid");
-            setFormPhone("");
-            setFormAddress("");
-            setShowAddModal(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Agregar Estudiante
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvResult(null); setShowImportModal(true); }}
+            className="flex items-center gap-2 px-3 py-2 border border-border bg-white rounded-lg hover:bg-[#f8fafc] transition-colors text-sm text-[#1e293b]"
+          >
+            <Upload className="w-4 h-4" /> <span className="hidden sm:inline">Importar CSV</span>
+          </button>
+          <button
+            onClick={() => {
+              setFormName("");
+              setFormGrade("");
+              setFormSection("");
+              setFormParent("");
+              setFormPaymentStatus("paid");
+              setFormPhone("");
+              setFormAddress("");
+              setShowAddModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Agregar Estudiante
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg p-4 border border-border shadow-sm">
@@ -585,6 +637,124 @@ export function Students() {
             <button onClick={() => { setShowDeleteModal(false); setDeleteStudent(null); }} className="px-4 py-2 rounded-lg border border-border bg-white text-sm text-[#64748b] hover:bg-[#f8fafc] transition-colors">Cancelar</button>
             <button onClick={handleConfirmDelete} className="px-4 py-2 rounded-lg bg-[#dc2626] text-white text-sm hover:bg-[#b91c1c] transition-colors">Eliminar</button>
           </div>
+        </div>
+      </Modal>
+
+      {/* CSV Import Modal */}
+      <Modal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        title="Importar Estudiantes desde CSV"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <label className="flex-1 flex items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-[#2563eb]/40 rounded-lg cursor-pointer hover:bg-[#eff6ff]/50 transition-colors">
+              <Upload className="w-5 h-5 text-[#2563eb]" />
+              <span className="text-sm text-[#2563eb]">Seleccionar archivo CSV</span>
+              <input type="file" accept=".csv" onChange={handleCSVFile} className="hidden" />
+            </label>
+            <button
+              onClick={handleDownloadTemplate}
+              className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg hover:bg-[#f8fafc] text-sm text-[#64748b] transition-colors whitespace-nowrap"
+            >
+              <Download className="w-4 h-4" /> Plantilla
+            </button>
+          </div>
+
+          <p className="text-xs text-[#94a3b8]">
+            Columnas esperadas: nombre, grado, seccion, apoderado, telefono, email_apoderado, direccion
+          </p>
+
+          {csvErrors.length > 0 && (
+            <div className="bg-[#fef2f2] border border-[#fecaca] rounded-lg p-3">
+              <p className="text-sm text-[#dc2626] font-medium mb-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" /> {csvErrors.length} errores encontrados
+              </p>
+              <ul className="text-xs text-[#991b1b] space-y-0.5 max-h-24 overflow-y-auto">
+                {csvErrors.map((err, i) => (
+                  <li key={i}>Fila {err.row}: {err.message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {csvRows.length > 0 && (
+            <>
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="overflow-x-auto max-h-48">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[#f8fafc] border-b border-border">
+                        <th className="px-3 py-2 text-left text-xs text-[#64748b]">#</th>
+                        <th className="px-3 py-2 text-left text-xs text-[#64748b]">Nombre</th>
+                        <th className="px-3 py-2 text-left text-xs text-[#64748b]">Grado</th>
+                        <th className="px-3 py-2 text-left text-xs text-[#64748b]">Sección</th>
+                        <th className="px-3 py-2 text-left text-xs text-[#64748b]">Apoderado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvRows.slice(0, 10).map((row, i) => (
+                        <tr key={i} className="border-b border-border last:border-0">
+                          <td className="px-3 py-2 text-[#94a3b8]">{i + 1}</td>
+                          <td className="px-3 py-2 text-[#1e293b]">{row.nombre}</td>
+                          <td className="px-3 py-2 text-[#64748b]">{row.grado}</td>
+                          <td className="px-3 py-2 text-[#64748b]">{row.seccion}</td>
+                          <td className="px-3 py-2 text-[#64748b]">{row.apoderado || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {csvRows.length > 10 && (
+                  <div className="px-3 py-2 bg-[#f8fafc] text-xs text-[#94a3b8] border-t border-border">
+                    ...y {csvRows.length - 10} filas más
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-sm text-[#1e293b]">
+                  <span className="font-medium">{csvRows.length}</span> estudiantes listos para importar
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowImportModal(false)}
+                    className="px-4 py-2 rounded-lg border border-border bg-white text-sm text-[#64748b] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleCSVImport}
+                    disabled={csvImporting || csvErrors.length > 0}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563eb] text-white text-sm hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
+                  >
+                    {csvImporting ? "Importando..." : `Importar ${csvRows.length} estudiantes`}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {csvResult && (
+            <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-lg p-4 space-y-2">
+              <p className="text-sm text-[#15803d] flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {csvResult.created} estudiantes creados exitosamente
+              </p>
+              {csvResult.failed > 0 && (
+                <p className="text-sm text-[#dc2626] flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" /> {csvResult.failed} fallaron
+                </p>
+              )}
+              {csvResult.errors.length > 0 && (
+                <ul className="text-xs text-[#991b1b] space-y-0.5">
+                  {csvResult.errors.map((err, i) => (
+                    <li key={i}>{err.name}: {err.message}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
     </div>

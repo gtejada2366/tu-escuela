@@ -3,7 +3,7 @@ import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import { authService } from "../services/auth.service";
 import { validatePassword } from "../lib/validation";
 
-export type Role = "director" | "profesor";
+export type Role = "director" | "profesor" | "padre";
 
 export interface AppUser {
   id: number;
@@ -27,6 +27,7 @@ interface AuthContextType {
   logout: () => void;
   isDirector: boolean;
   isProfesor: boolean;
+  isPadre: boolean;
   changePassword: (oldPassword: string, newPassword: string) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   updateCurrentUser: (data: { name: string; email: string }) => Promise<void>;
@@ -55,6 +56,8 @@ const initialRegistry: RegisteredUser[] = [
   { id: 8, name: "Fernando Díaz Castro", email: "fdiaz@tuescuela.edu.pe", role: "profesor", status: "active", avatar: "FD", password: "admin" },
   { id: 9, name: "Gabriela Núñez Vega", email: "gnunez@tuescuela.edu.pe", role: "profesor", status: "active", avatar: "GN", password: "admin" },
   { id: 10, name: "Subdirector Académico", email: "subdirector@tuescuela.edu.pe", role: "director", status: "active", avatar: "SA", password: "admin" },
+  { id: 11, name: "Carlos González Ruiz", email: "carlos.gonzalez@email.com", role: "padre", status: "active", avatar: "CG", password: "admin" },
+  { id: 12, name: "Roberto Martínez", email: "roberto.martinez@email.com", role: "padre", status: "active", avatar: "RM", password: "admin" },
 ];
 
 /** Fetch all profiles from Supabase and map to RegisteredUser[] */
@@ -362,6 +365,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         isDirector: user?.role === "director",
         isProfesor: user?.role === "profesor",
+        isPadre: user?.role === "padre",
         changePassword,
         resetPassword,
         updateCurrentUser,

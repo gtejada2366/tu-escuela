@@ -3,7 +3,7 @@ import { Badge } from "../components/Badge";
 import { Modal } from "../components/Modal";
 import { useToast } from "../components/Toast";
 import { useAuth } from "../contexts/AuthContext";
-import { Shield, BookOpen, Edit, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { Shield, BookOpen, Edit, Plus, Trash2, Eye, EyeOff, Heart } from "lucide-react";
 import { isValidEmail, validatePassword } from "../lib/validation";
 
 export function Roles() {
@@ -17,13 +17,14 @@ export function Roles() {
 
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
-  const [formRole, setFormRole] = useState<"director" | "profesor">("profesor");
+  const [formRole, setFormRole] = useState<"director" | "profesor" | "padre">("profesor");
   const [formStatus, setFormStatus] = useState<"active" | "inactive">("active");
   const [formPassword, setFormPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const directors = usersRegistry.filter((u) => u.role === "director");
   const profesores = usersRegistry.filter((u) => u.role === "profesor");
+  const padres = usersRegistry.filter((u) => u.role === "padre");
   const deletingUser = usersRegistry.find((u) => u.id === deletingUserId) ?? null;
 
   const handleOpenAdd = () => {
@@ -81,7 +82,7 @@ export function Roles() {
     }
 
     if (editingUserId !== null) {
-      const data: Partial<{ name: string; email: string; role: "director" | "profesor"; status: "active" | "inactive"; password: string }> = {
+      const data: Partial<{ name: string; email: string; role: "director" | "profesor" | "padre"; status: "active" | "inactive"; password: string }> = {
         name: formName.trim(),
         email: formEmail.trim(),
         role: formRole,
@@ -175,7 +176,7 @@ export function Roles() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg p-6 border border-[#e2e8f0] shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-[#eff6ff]"><Shield className="w-5 h-5 text-[#2563eb]" /></div>
@@ -191,6 +192,14 @@ export function Roles() {
           </div>
           <p className="text-3xl text-[#1e293b]">{profesores.length}</p>
           <p className="text-xs text-[#64748b] mt-1">Gestión de clases y calificaciones</p>
+        </div>
+        <div className="bg-white rounded-lg p-6 border border-[#e2e8f0] shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-[#fef3c7]"><Heart className="w-5 h-5 text-[#f59e0b]" /></div>
+            <span className="text-sm text-[#64748b]">Padres/Apoderados</span>
+          </div>
+          <p className="text-3xl text-[#1e293b]">{padres.length}</p>
+          <p className="text-xs text-[#64748b] mt-1">Vista de hijos: notas, asistencia y pagos</p>
         </div>
       </div>
 
@@ -213,6 +222,18 @@ export function Roles() {
           ))}
         </div>
       </div>
+
+      {padres.length > 0 && (
+        <div className="bg-white rounded-lg border border-[#e2e8f0] shadow-sm p-6">
+          <h2 className="text-lg text-[#1e293b] mb-1">Padres / Apoderados</h2>
+          <p className="text-xs text-[#64748b] mb-4">Solo lectura: pueden ver notas, asistencia y estado de pagos de sus hijos.</p>
+          <div className="space-y-3">
+            {padres.map((user) => (
+              <UserCard key={user.id} user={user} />
+            ))}
+          </div>
+        </div>
+      )}
 
       <Modal
         isOpen={modalOpen}
@@ -265,11 +286,12 @@ export function Roles() {
             <label className="block text-sm text-[#1e293b] mb-1">Rol</label>
             <select
               value={formRole}
-              onChange={(e) => setFormRole(e.target.value as "director" | "profesor")}
+              onChange={(e) => setFormRole(e.target.value as "director" | "profesor" | "padre")}
               className="w-full px-4 py-2 rounded-lg border border-[#e2e8f0] bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
             >
               <option value="director">Director</option>
               <option value="profesor">Profesor</option>
+              <option value="padre">Padre/Apoderado</option>
             </select>
           </div>
           <div>

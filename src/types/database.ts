@@ -94,7 +94,7 @@ export type Profile = {
   id: string;
   name: string;
   email: string | null;
-  role: "director" | "profesor";
+  role: "director" | "profesor" | "padre";
   avatar: string | null;
   status: "active" | "inactive";
   phone: string | null;

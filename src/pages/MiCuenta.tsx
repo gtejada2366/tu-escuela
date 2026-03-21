@@ -24,7 +24,7 @@ export function MiCuenta() {
   const isDirty = editingProfile && (formName !== (user?.name ?? "") || formEmail !== (user?.email ?? ""))
     || oldPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
 
-  const roleLabelMap = { director: "Director", profesor: "Profesor" };
+  const roleLabelMap: Record<string, string> = { director: "Director", profesor: "Profesor", padre: "Padre/Apoderado" };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();

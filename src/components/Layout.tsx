@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useSchoolConfig } from "../contexts/SchoolConfigContext";
+import { useNotifications } from "../hooks/useNotifications";
+import { Heart } from "lucide-react";
 
 const allMenuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", roles: ["director", "profesor"] },
@@ -36,23 +38,20 @@ const allMenuItems = [
   { icon: MessageCircle, label: "Mensajería", path: "/mensajeria", roles: ["director", "profesor"] },
   { icon: Shield, label: "Roles", path: "/roles", roles: ["director"] },
   { icon: Settings, label: "Configuración", path: "/configuracion", roles: ["director"] },
-  { icon: UserCircle, label: "Mi Cuenta", path: "/mi-cuenta", roles: ["director", "profesor"] },
+  { icon: Heart, label: "Mis Hijos", path: "/mis-hijos", roles: ["padre"] },
+  { icon: UserCircle, label: "Mi Cuenta", path: "/mi-cuenta", roles: ["director", "profesor", "padre"] },
 ];
 
 const sedeOptions = ["Sede Principal", "Sede Norte", "Sede Sur"];
 
-const notifications = [
-  { text: "Nueva matrícula registrada", time: "Hace 5 min" },
-  { text: "Pago pendiente de Diego Ramírez", time: "Hace 1 hora" },
-  { text: "Calificaciones actualizadas - 3° Primaria A", time: "Hace 2 horas" },
-  { text: "Reunión de padres programada", time: "Hace 3 horas" },
-];
+// Notifications are now loaded from useNotifications hook
 
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { schoolName, logoUrl } = useSchoolConfig();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, getTimeAgo } = useNotifications(user?.uid);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Sede dropdown state
@@ -61,7 +60,6 @@ export function Layout() {
 
   // Notifications state
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [hasNewNotifications, setHasNewNotifications] = useState(true);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,11 +76,16 @@ export function Layout() {
 
   // Redirect if accessing a page not allowed by role
   useEffect(() => {
+    // Parents should go to /mis-hijos instead of /
+    if (role === "padre" && location.pathname === "/") {
+      navigate("/mis-hijos", { replace: true });
+      return;
+    }
     const currentItem = allMenuItems.find((item) =>
       item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path)
     );
     if (currentItem && !currentItem.roles.includes(role)) {
-      navigate("/", { replace: true });
+      navigate(role === "padre" ? "/mis-hijos" : "/", { replace: true });
     }
   }, [location.pathname, role, navigate]);
 
@@ -114,12 +117,9 @@ export function Layout() {
 
   const handleNotificationsToggle = () => {
     setNotificationsOpen((prev) => !prev);
-    if (!notificationsOpen) {
-      setHasNewNotifications(false);
-    }
   };
 
-  const roleLabelMap = { director: "Director", profesor: "Profesor" };
+  const roleLabelMap: Record<string, string> = { director: "Director", profesor: "Profesor", padre: "Padre/Apoderado" };
 
   const SidebarContent = () => (
     <>
@@ -323,8 +323,10 @@ export function Layout() {
                   aria-label="Notificaciones"
                 >
                   <Bell className="w-5 h-5 text-[#64748b]" />
-                  {hasNewNotifications && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-[#dc2626] rounded-full"></span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#dc2626] text-white text-[10px] font-bold rounded-full px-1">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
                   )}
                 </button>
 
@@ -335,19 +337,50 @@ export function Layout() {
                       onClick={() => setNotificationsOpen(false)}
                     />
                     <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-border rounded-lg shadow-lg z-20">
-                      <div className="px-4 py-3 border-b border-border">
+                      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-[#1e293b]">Notificaciones</h3>
-                      </div>
-                      <div className="py-1">
-                        {notifications.map((notification, index) => (
-                          <div
-                            key={index}
-                            className="px-4 py-3 hover:bg-[#f8fafc] transition-colors cursor-pointer border-b border-border last:border-b-0"
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={() => markAllAsRead()}
+                            className="text-xs text-[#2563eb] hover:underline"
                           >
-                            <p className="text-sm text-[#1e293b]">{notification.text}</p>
-                            <p className="text-xs text-[#64748b] mt-1">{notification.time}</p>
+                            Marcar todas leídas
+                          </button>
+                        )}
+                      </div>
+                      <div className="py-1 max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center">
+                            <p className="text-sm text-[#94a3b8]">Sin notificaciones</p>
                           </div>
-                        ))}
+                        ) : (
+                          notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              onClick={() => {
+                                if (!notification.isRead) markAsRead(notification.id);
+                                if (notification.link) {
+                                  navigate(notification.link);
+                                  setNotificationsOpen(false);
+                                }
+                              }}
+                              className={`px-4 py-3 hover:bg-[#f8fafc] transition-colors cursor-pointer border-b border-border last:border-b-0 ${
+                                notification.isRead ? "opacity-60" : ""
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {!notification.isRead && (
+                                  <span className="mt-1.5 w-2 h-2 bg-[#2563eb] rounded-full shrink-0"></span>
+                                )}
+                                <div className={!notification.isRead ? "" : "pl-4"}>
+                                  <p className="text-sm text-[#1e293b]">{notification.title}</p>
+                                  <p className="text-xs text-[#64748b] mt-0.5">{notification.description}</p>
+                                  <p className="text-xs text-[#94a3b8] mt-1">{getTimeAgo(notification.createdAt)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   </>
