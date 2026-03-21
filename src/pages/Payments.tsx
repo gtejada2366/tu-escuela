@@ -3,11 +3,12 @@ import { Badge } from "../components/Badge";
 import { Modal } from "../components/Modal";
 import { useToast } from "../components/Toast";
 import { SortableHeader, sortData, getNextSort, type SortDirection } from "../components/SortableHeader";
-import { TrendingUp, AlertCircle, CheckCircle2, Search, Filter, ChevronDown, Download, Printer } from "lucide-react";
+import { TrendingUp, AlertCircle, CheckCircle2, Search, Filter, ChevronDown, Download, Printer, FileText } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { usePaymentsData, type PaymentLocal } from "../hooks/usePaymentsData";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { useSchoolConfig } from "../contexts/SchoolConfigContext";
+import { generarReportePagos, generarRecibo } from "../lib/pdf/reportePagos";
 
 type PaymentRecord = PaymentLocal;
 
@@ -194,12 +195,23 @@ export function Payments() {
           <h1 className="text-2xl text-[#1e293b] mb-2">Gestión de Pagos</h1>
           <p className="text-sm text-[#64748b]">Control de pensiones y pagos escolares</p>
         </div>
-        <button
-          onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors"
-        >
-          <Download className="w-4 h-4" /> Exportar Reporte
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-3 py-2 border border-border bg-white rounded-lg hover:bg-[#f8fafc] transition-colors text-sm text-[#1e293b]"
+          >
+            <Download className="w-4 h-4" /> CSV
+          </button>
+          <button
+            onClick={() => {
+              generarReportePagos({ schoolName, payments, totalPaid, totalPending, totalOverdue, collectionRate });
+              showToast("Reporte de pagos descargado");
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors text-sm"
+          >
+            <FileText className="w-4 h-4" /> Exportar PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -505,10 +517,10 @@ export function Payments() {
                 Cerrar
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={() => generarRecibo({ schoolName, receiptId: selectedPayment.id, student: selectedPayment.student, grade: selectedPayment.grade, amount: selectedPayment.amount, dueDate: selectedPayment.dueDate, paidDate: selectedPayment.paidDate, status: selectedPayment.status })}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#2563eb] text-white text-sm hover:bg-[#1d4ed8] transition-colors"
               >
-                <Printer className="w-4 h-4" /> Imprimir
+                <Printer className="w-4 h-4" /> Descargar PDF
               </button>
             </div>
           </div>

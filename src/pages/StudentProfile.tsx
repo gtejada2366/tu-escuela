@@ -16,6 +16,10 @@ import {
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useStudentProfileData } from "../hooks/useStudentProfileData";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { useSchoolConfig } from "../contexts/SchoolConfigContext";
+import { generarConstancia } from "../lib/pdf/reporteConstancia";
+import { generarLibreta } from "../lib/pdf/reporteCalificaciones";
+import { Download } from "lucide-react";
 
 function getAttendanceCounts(baseAttendance: number) {
   const totalDays = 142;
@@ -44,6 +48,7 @@ function getPaymentTotal(payments: { status: string; amount: string }[]) {
 export function StudentProfile() {
   const { id } = useParams();
   const { student, loading, error, found } = useStudentProfileData(id);
+  const { schoolName } = useSchoolConfig();
 
   if (loading) return <LoadingSpinner />;
 
@@ -71,13 +76,33 @@ export function StudentProfile() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link to="/estudiantes" className="p-2 rounded-lg border border-border bg-white hover:bg-[#f8fafc] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[#64748b]" />
-        </Link>
-        <div>
-          <h1 className="text-2xl text-[#1e293b] mb-1">Perfil de Estudiante</h1>
-          <p className="text-sm text-[#64748b]">Información completa del estudiante</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/estudiantes" className="p-2 rounded-lg border border-border bg-white hover:bg-[#f8fafc] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[#64748b]" />
+          </Link>
+          <div>
+            <h1 className="text-2xl text-[#1e293b] mb-1">Perfil de Estudiante</h1>
+            <p className="text-sm text-[#64748b]">Información completa del estudiante</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => generarConstancia({ schoolName, studentName: student.name, code: student.code, grade: student.grade, section: student.section, birthDate: student.birthDate, address: student.address, parent: student.parent, parentPhone: student.parentPhone, attendance: student.attendance })}
+            className="flex items-center gap-2 px-3 py-2 border border-border bg-white rounded-lg hover:bg-[#f8fafc] transition-colors text-sm text-[#1e293b]"
+            title="Descargar constancia de matrícula"
+          >
+            <FileText className="w-4 h-4" /> <span className="hidden sm:inline">Constancia</span>
+          </button>
+          {gradesData.length > 0 && (
+            <button
+              onClick={() => generarLibreta({ schoolName, studentName: student.name, grade: student.grade, section: student.section, gradesData, avgGrade: student.avgGrade, attendance: student.attendance })}
+              className="flex items-center gap-2 px-3 py-2 border border-border bg-white rounded-lg hover:bg-[#f8fafc] transition-colors text-sm text-[#1e293b]"
+              title="Descargar libreta de notas"
+            >
+              <Download className="w-4 h-4" /> <span className="hidden sm:inline">Libreta</span>
+            </button>
+          )}
         </div>
       </div>
 

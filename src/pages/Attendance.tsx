@@ -3,10 +3,12 @@ import { Badge } from "../components/Badge";
 import { Modal } from "../components/Modal";
 import { useToast } from "../components/Toast";
 import { SortableHeader, sortData, getNextSort, type SortDirection } from "../components/SortableHeader";
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Filter, ChevronDown } from "lucide-react";
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Filter, ChevronDown, Download } from "lucide-react";
 import { useAttendanceData, type AttendanceStatus, type StudentRecord, type ClassAttendance } from "../hooks/useAttendanceData";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { UnsavedChangesGuard } from "../components/UnsavedChangesGuard";
+import { generarReporteAsistencia } from "../lib/pdf/reporteAsistencia";
+import { useSchoolConfig } from "../contexts/SchoolConfigContext";
 
 const gradeFilterOptions = ["Todos", "Inicial", "Primaria", "Secundaria"];
 
@@ -32,6 +34,7 @@ function toInputDateString(date: Date): string {
 
 export function Attendance() {
   const { showToast } = useToast();
+  const { schoolName } = useSchoolConfig();
   const { classesData, selectedDate, changeDate, loading, error, saveAttendance, loadClassStudents } = useAttendanceData();
 
   useEffect(() => { if (error) showToast(error, "error"); }, [error]);
@@ -147,9 +150,29 @@ export function Attendance() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl text-[#1e293b] mb-2">Registro de Asistencia</h1>
-        <p className="text-sm text-[#64748b]">Control diario de asistencia por clase</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl text-[#1e293b] mb-2">Registro de Asistencia</h1>
+          <p className="text-sm text-[#64748b]">Control diario de asistencia por clase</p>
+        </div>
+        <button
+          onClick={() => {
+            generarReporteAsistencia({
+              schoolName,
+              date: formatDateToSpanish(selectedDate),
+              classes: filteredClasses.map((c) => ({ grade: c.grade, total: c.total, present: c.present, absent: c.absent, late: c.late, percentage: c.percentage })),
+              totalStudents,
+              totalPresent,
+              totalAbsent,
+              totalLate,
+              overallPercentage,
+            });
+            showToast("Reporte de asistencia descargado");
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors text-sm self-start"
+        >
+          <Download className="w-4 h-4" /> Exportar PDF
+        </button>
       </div>
 
       <div className="bg-white rounded-lg p-4 border border-border shadow-sm">

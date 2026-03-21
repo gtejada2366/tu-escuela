@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useGradesData, DEFAULT_GRADE_CONFIG, type GradeStudent, type GradeColumnConfig } from "../hooks/useGradesData";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { useSchoolConfig } from "../contexts/SchoolConfigContext";
+import { generarReporteCalificaciones } from "../lib/pdf/reporteCalificaciones";
 
 export function Calificaciones() {
   const { showToast } = useToast();
@@ -81,16 +82,14 @@ export function Calificaciones() {
   };
 
   const handleExportPDF = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) { showToast("Permite ventanas emergentes para exportar PDF", "error"); return; }
-    const colHeaders = gradeConfig.map((c) => `<th style="padding:10px 8px;text-align:center;font-size:12px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0">${c.label}</th>`).join("");
-    const rows = studentsData.map((s) => {
-      const cells = s.values.map((v) => `<td style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0">${v}</td>`).join("");
-      return `<tr><td style="padding:8px;border-bottom:1px solid #e2e8f0">${s.name}</td>${cells}<td style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0;font-weight:600">${s.average}</td></tr>`;
-    }).join("");
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>Calificaciones - ${selectedClass.name}</title><style>body{font-family:system-ui,sans-serif;padding:40px;color:#1e293b}h1{font-size:20px;margin-bottom:4px}p{font-size:14px;color:#64748b;margin-bottom:20px}table{width:100%;border-collapse:collapse}th{background:#f8fafc;padding:10px 8px;text-align:center;font-size:12px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0}th:first-child{text-align:left}td{font-size:14px}@media print{body{padding:20px}}</style></head><body><h1>${schoolName} — Reporte de Calificaciones</h1><p>${selectedClass.name} | Generado: ${new Date().toLocaleDateString("es-PE")}</p><table><thead><tr><th style="text-align:left">Estudiante</th>${colHeaders}<th style="padding:10px 8px;text-align:center;font-size:12px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0">Promedio</th></tr></thead><tbody>${rows}</tbody></table><p style="margin-top:24px;font-size:12px;color:#94a3b8">Promedio general: ${courseStats.average} | Nota más alta: ${courseStats.highest} | Nota más baja: ${courseStats.lowest}</p></body></html>`);
-    printWindow.document.close();
-    printWindow.print();
+    generarReporteCalificaciones({
+      schoolName,
+      className: selectedClass.name,
+      gradeConfig,
+      students: studentsData,
+      courseStats,
+    });
+    showToast("PDF de calificaciones descargado");
   };
 
   const handleSave = async () => {
