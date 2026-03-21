@@ -13,6 +13,7 @@ export interface AppUser {
   role: Role;
   avatar: string;
   email: string;
+  school_id?: string;
 }
 
 export interface RegisteredUser extends AppUser {
@@ -109,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: profile.role as Role,
             avatar: profile.avatar ?? generateAvatar(profile.name),
             email: session.user.email ?? "",
+            school_id: profile.school_id,
           });
           // Load all profiles into registry so Roles page works
           fetchSupabaseProfiles()
@@ -145,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: profile.role as Role,
               avatar: profile.avatar ?? generateAvatar(profile.name),
               email: session.user.email ?? "",
+              school_id: profile.school_id,
             });
           } else if (profile && profile.status === "inactive") {
             await sb.auth.signOut({ scope: "local" });
@@ -195,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: profile.role as Role,
         avatar: profile.avatar ?? generateAvatar(profile.name),
         email: session.user.email ?? email,
+        school_id: profile.school_id,
       });
       return null;
     }
@@ -281,6 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password: userData.password,
           name: userData.name,
           role: userData.role,
+          school_id: user?.school_id,
         },
       });
 

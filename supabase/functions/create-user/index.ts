@@ -38,10 +38,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check that the caller is a director
+    // Check that the caller is a director and get their school_id
     const { data: profile } = await userClient
       .from("profiles")
-      .select("role")
+      .select("role, school_id")
       .eq("id", caller.id)
       .single();
 
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { email, password, name, role } = await req.json();
+    const { email, password, name, role, school_id: reqSchoolId } = await req.json();
 
     if (!email || !password || !name || !role) {
       return new Response(
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!["director", "profesor"].includes(role)) {
+    if (!["director", "profesor", "padre"].includes(role)) {
       return new Response(
         JSON.stringify({ error: "Rol inválido. Debe ser 'director' o 'profesor'" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { name, role },
+      user_metadata: { name, role, school_id: reqSchoolId || profile?.school_id },
     });
 
     if (error) {

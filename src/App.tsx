@@ -47,13 +47,13 @@ function AppContent() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <SchoolConfigProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <SchoolConfigProvider>
           <ToastProvider>
             <AppContent />
           </ToastProvider>
-        </AuthProvider>
-      </SchoolConfigProvider>
+        </SchoolConfigProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

@@ -5,7 +5,7 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import type { PaymentRecord, PaymentSummaryView } from "../types/database";
 
-type PaymentInsert = Omit<PaymentRecord, "id" | "created_at" | "updated_at">;
+type PaymentInsert = Omit<PaymentRecord, "id" | "school_id" | "created_at" | "updated_at">;
 type PaymentUpdate = Partial<Pick<PaymentRecord, "status" | "paid_date" | "amount" | "due_date">>;
 
 async function getAll(): Promise<PaymentSummaryView[]> {

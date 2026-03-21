@@ -5,7 +5,7 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import type { AttendanceRecord, AttendanceSummary } from "../types/database";
 
-type AttendanceInsert = Omit<AttendanceRecord, "id" | "created_at" | "updated_at">;
+type AttendanceInsert = Omit<AttendanceRecord, "id" | "school_id" | "created_at" | "updated_at">;
 
 async function getSummaryByDate(date: string): Promise<AttendanceSummary[]> {
   if (!supabase) return [];

@@ -5,8 +5,8 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import type { Student } from "../types/database";
 
-export type StudentInsert = Omit<Student, "id" | "created_at" | "updated_at">;
-export type StudentUpdate = Partial<Omit<Student, "id" | "created_at" | "updated_at">>;
+export type StudentInsert = Omit<Student, "id" | "school_id" | "created_at" | "updated_at">;
+export type StudentUpdate = Partial<Omit<Student, "id" | "school_id" | "created_at" | "updated_at">>;
 
 async function getAll(): Promise<Student[]> {
   if (!supabase) return [];

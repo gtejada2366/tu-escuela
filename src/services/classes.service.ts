@@ -5,8 +5,8 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import type { ClassRecord, ClassView, Enrollment } from "../types/database";
 
-export type ClassInsert = Omit<ClassRecord, "id" | "created_at" | "updated_at">;
-export type ClassUpdate = Partial<Omit<ClassRecord, "id" | "created_at" | "updated_at">>;
+export type ClassInsert = Omit<ClassRecord, "id" | "school_id" | "created_at" | "updated_at">;
+export type ClassUpdate = Partial<Omit<ClassRecord, "id" | "school_id" | "created_at" | "updated_at">>;
 
 async function getAll(): Promise<ClassView[]> {
   if (!supabase) return [];

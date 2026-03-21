@@ -6,6 +6,12 @@ export type Database = {
   };
   public: {
     Tables: {
+      schools: {
+        Row: School;
+        Insert: Omit<School, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<School, "id">>;
+        Relationships: [];
+      };
       profiles: {
         Row: Profile;
         Insert: Omit<Profile, "created_at" | "updated_at">;
@@ -14,68 +20,68 @@ export type Database = {
       };
       academic_years: {
         Row: AcademicYear;
-        Insert: Omit<AcademicYear, "id" | "created_at">;
-        Update: Partial<Omit<AcademicYear, "id">>;
+        Insert: Omit<AcademicYear, "id" | "school_id" | "created_at">;
+        Update: Partial<Omit<AcademicYear, "id" | "school_id">>;
         Relationships: [];
       };
       students: {
         Row: Student;
-        Insert: Omit<Student, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<Student, "id">>;
+        Insert: Omit<Student, "id" | "school_id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<Student, "id" | "school_id">>;
         Relationships: [];
       };
       classes: {
         Row: ClassRecord;
-        Insert: Omit<ClassRecord, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<ClassRecord, "id">>;
+        Insert: Omit<ClassRecord, "id" | "school_id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<ClassRecord, "id" | "school_id">>;
         Relationships: [];
       };
       enrollments: {
         Row: Enrollment;
-        Insert: Omit<Enrollment, "id" | "created_at">;
-        Update: Partial<Omit<Enrollment, "id">>;
+        Insert: Omit<Enrollment, "id" | "school_id" | "created_at">;
+        Update: Partial<Omit<Enrollment, "id" | "school_id">>;
         Relationships: [];
       };
       attendance: {
         Row: AttendanceRecord;
-        Insert: Omit<AttendanceRecord, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<AttendanceRecord, "id">>;
+        Insert: Omit<AttendanceRecord, "id" | "school_id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<AttendanceRecord, "id" | "school_id">>;
         Relationships: [];
       };
       grades: {
         Row: GradeRecord;
-        Insert: Omit<GradeRecord, "id" | "average" | "created_at" | "updated_at">;
-        Update: Partial<Omit<GradeRecord, "id" | "average">>;
+        Insert: Omit<GradeRecord, "id" | "school_id" | "average" | "created_at" | "updated_at">;
+        Update: Partial<Omit<GradeRecord, "id" | "school_id" | "average">>;
         Relationships: [];
       };
       payments: {
         Row: PaymentRecord;
-        Insert: Omit<PaymentRecord, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<PaymentRecord, "id">>;
+        Insert: Omit<PaymentRecord, "id" | "school_id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<PaymentRecord, "id" | "school_id">>;
         Relationships: [];
       };
       messages: {
         Row: MessageRecord;
-        Insert: Omit<MessageRecord, "id" | "created_at">;
-        Update: Partial<Omit<MessageRecord, "id">>;
+        Insert: Omit<MessageRecord, "id" | "school_id" | "created_at">;
+        Update: Partial<Omit<MessageRecord, "id" | "school_id">>;
         Relationships: [];
       };
       message_recipients: {
         Row: MessageRecipient;
-        Insert: Omit<MessageRecipient, "id" | "created_at">;
-        Update: Partial<Omit<MessageRecipient, "id">>;
+        Insert: Omit<MessageRecipient, "id" | "school_id" | "created_at">;
+        Update: Partial<Omit<MessageRecipient, "id" | "school_id">>;
         Relationships: [];
       };
       message_attachments: {
         Row: MessageAttachment;
-        Insert: Omit<MessageAttachment, "id" | "created_at">;
-        Update: Partial<Omit<MessageAttachment, "id">>;
+        Insert: Omit<MessageAttachment, "id" | "school_id" | "created_at">;
+        Update: Partial<Omit<MessageAttachment, "id" | "school_id">>;
         Relationships: [];
       };
       homework: {
         Row: HomeworkRecord;
-        Insert: Omit<HomeworkRecord, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<HomeworkRecord, "id">>;
+        Insert: Omit<HomeworkRecord, "id" | "school_id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<HomeworkRecord, "id" | "school_id">>;
         Relationships: [];
       };
     };
@@ -90,8 +96,21 @@ export type Database = {
 
 // ── Table row types ──────────────────────────────────────────
 
+export type School = {
+  id: string;
+  name: string;
+  tagline: string;
+  logo_url: string;
+  slug: string;
+  status: "active" | "suspended" | "trial";
+  plan: "basico" | "pro";
+  created_at: string;
+  updated_at: string;
+};
+
 export type Profile = {
   id: string;
+  school_id: string;
   name: string;
   email: string | null;
   role: "director" | "profesor" | "padre";
@@ -107,6 +126,7 @@ export type Profile = {
 
 export type AcademicYear = {
   id: number;
+  school_id: string;
   name: string;
   start_date: string;
   end_date: string;
@@ -116,6 +136,7 @@ export type AcademicYear = {
 
 export type Student = {
   id: number;
+  school_id: string;
   name: string;
   grade: string;
   section: string;
@@ -133,6 +154,7 @@ export type GradeColumnConfig = { label: string; weight: number };
 
 export type ClassRecord = {
   id: number;
+  school_id: string;
   subject: string;
   grade: string;
   section: string;
@@ -148,6 +170,7 @@ export type ClassRecord = {
 
 export type Enrollment = {
   id: number;
+  school_id: string;
   class_id: number;
   student_id: number;
   created_at: string;
@@ -155,6 +178,7 @@ export type Enrollment = {
 
 export type AttendanceRecord = {
   id: number;
+  school_id: string;
   class_id: number;
   student_id: number;
   date: string;
@@ -165,6 +189,7 @@ export type AttendanceRecord = {
 
 export type GradeRecord = {
   id: number;
+  school_id: string;
   class_id: number;
   student_id: number;
   period: string;
@@ -180,6 +205,7 @@ export type GradeRecord = {
 
 export type PaymentRecord = {
   id: number;
+  school_id: string;
   student_id: number;
   concept: string;
   amount: number;
@@ -194,6 +220,7 @@ export type PaymentRecord = {
 
 export type MessageRecord = {
   id: number;
+  school_id: string;
   sender_id: string;
   subject: string;
   content: string;
@@ -203,6 +230,7 @@ export type MessageRecord = {
 
 export type MessageRecipient = {
   id: number;
+  school_id: string;
   message_id: number;
   recipient_type: "user" | "group" | "grade";
   recipient_id: string | null;
@@ -213,6 +241,7 @@ export type MessageRecipient = {
 
 export type MessageAttachment = {
   id: number;
+  school_id: string;
   message_id: number;
   file_name: string;
   file_path: string;
@@ -223,6 +252,7 @@ export type MessageAttachment = {
 
 export type HomeworkRecord = {
   id: number;
+  school_id: string;
   class_id: number;
   title: string;
   description: string | null;

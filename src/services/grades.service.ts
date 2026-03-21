@@ -5,7 +5,7 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import type { GradeRecord } from "../types/database";
 
-type GradeInsert = Omit<GradeRecord, "id" | "average" | "created_at" | "updated_at">;
+type GradeInsert = Omit<GradeRecord, "id" | "school_id" | "average" | "created_at" | "updated_at">;
 type GradeUpdate = Partial<Pick<GradeRecord, "exam1" | "exam2" | "homework" | "participation">>;
 
 async function getByClass(classId: number, period?: string): Promise<Array<GradeRecord & { student_name: string }>> {

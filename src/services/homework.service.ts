@@ -5,7 +5,7 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
 import type { HomeworkRecord } from "../types/database";
 
-type HomeworkInsert = Omit<HomeworkRecord, "id" | "created_at" | "updated_at">;
+type HomeworkInsert = Omit<HomeworkRecord, "id" | "school_id" | "created_at" | "updated_at">;
 type HomeworkUpdate = Partial<Pick<HomeworkRecord, "title" | "description" | "due_date">>;
 
 async function getByClass(classId: number): Promise<HomeworkRecord[]> {

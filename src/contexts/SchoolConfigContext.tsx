@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { supabase, isSupabaseEnabled } from "../lib/supabase";
+import { useAuth } from "./AuthContext";
 
 export interface SchoolConfig {
   schoolName: string;
@@ -18,7 +20,7 @@ const defaults: SchoolConfig = {
 
 const STORAGE_KEY = "school_config";
 
-function loadConfig(): SchoolConfig {
+function loadLocalConfig(): SchoolConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { ...defaults, ...JSON.parse(raw) };
@@ -32,7 +34,30 @@ const SchoolConfigContext = createContext<SchoolConfigContextType>({
 });
 
 export function SchoolConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<SchoolConfig>(loadConfig);
+  const { user } = useAuth();
+  const [config, setConfig] = useState<SchoolConfig>(loadLocalConfig);
+
+  // Load config from schools table when user is authenticated
+  useEffect(() => {
+    if (!isSupabaseEnabled() || !supabase || !user?.school_id) return;
+
+    supabase
+      .from("schools")
+      .select("name, tagline, logo_url")
+      .eq("id", user.school_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          const next: SchoolConfig = {
+            schoolName: data.name,
+            tagline: data.tagline ?? defaults.tagline,
+            logoUrl: data.logo_url ?? "",
+          };
+          setConfig(next);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        }
+      });
+  }, [user?.school_id]);
 
   useEffect(() => {
     document.title = config.schoolName;
@@ -42,9 +67,21 @@ export function SchoolConfigProvider({ children }: { children: ReactNode }) {
     setConfig((prev) => {
       const next = { ...prev, ...updates };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+
+      // Persist to schools table if connected
+      if (isSupabaseEnabled() && supabase && user?.school_id) {
+        const dbUpdates: Record<string, string> = {};
+        if (updates.schoolName !== undefined) dbUpdates.name = updates.schoolName;
+        if (updates.tagline !== undefined) dbUpdates.tagline = updates.tagline;
+        if (updates.logoUrl !== undefined) dbUpdates.logo_url = updates.logoUrl;
+        if (Object.keys(dbUpdates).length > 0) {
+          supabase.from("schools").update(dbUpdates).eq("id", user.school_id).then(() => {});
+        }
+      }
+
       return next;
     });
-  }, []);
+  }, [user?.school_id]);
 
   return (
     <SchoolConfigContext.Provider value={{ ...config, updateConfig }}>
