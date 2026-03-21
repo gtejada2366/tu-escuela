@@ -145,12 +145,14 @@ export function Roles() {
         <button
           onClick={() => handleOpenEdit(user.id)}
           className="p-1.5 rounded-lg hover:bg-[#f1f5f9] transition-colors"
+          aria-label="Editar usuario"
         >
           <Edit className="w-4 h-4 text-[#64748b]" />
         </button>
         <button
           onClick={() => handleOpenDelete(user.id)}
           className="p-1.5 rounded-lg hover:bg-[#fee2e2] transition-colors"
+          aria-label="Eliminar usuario"
         >
           <Trash2 className="w-4 h-4 text-[#dc2626]" />
         </button>

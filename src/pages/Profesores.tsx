@@ -355,7 +355,7 @@ export function Profesores() {
 
       <div className="bg-white rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[540px]">
             <thead className="bg-[#f8fafc] border-b border-border">
               <tr>
                 <SortableHeader label="Profesor" sortKey="name" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} />
@@ -367,7 +367,13 @@ export function Profesores() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {paginatedProfessors.map((professor) => (
+              {paginatedProfessors.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-[#64748b]">
+                    No se encontraron profesores
+                  </td>
+                </tr>
+              ) : paginatedProfessors.map((professor) => (
                 <tr key={professor.id} className="hover:bg-[#f8fafc] transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -440,8 +446,9 @@ export function Profesores() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Nombre completo</label>
+            <label htmlFor="profesor-name" className="block text-sm text-[#1e293b] mb-1">Nombre completo</label>
             <input
+              id="profesor-name"
               type="text"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
@@ -453,8 +460,9 @@ export function Profesores() {
           {!editingProfessor && (
             <>
               <div>
-                <label className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
+                <label htmlFor="profesor-email" className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
                 <input
+                  id="profesor-email"
                   type="email"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
@@ -463,8 +471,9 @@ export function Profesores() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#1e293b] mb-1">Contraseña</label>
+                <label htmlFor="profesor-password" className="block text-sm text-[#1e293b] mb-1">Contraseña</label>
                 <input
+                  id="profesor-password"
                   type="password"
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
@@ -538,17 +547,18 @@ export function Profesores() {
           </div>
 
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Teléfono</label>
-            <input type="text" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Ej: +51 987 654 321" className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="profesor-phone" className="block text-sm text-[#1e293b] mb-1">Teléfono</label>
+            <input id="profesor-phone" type="text" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Ej: +51 987 654 321" className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Dirección</label>
-            <input type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="Ej: Av. Los Pinos 456, San Isidro" className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="profesor-address" className="block text-sm text-[#1e293b] mb-1">Dirección</label>
+            <input id="profesor-address" type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="Ej: Av. Los Pinos 456, San Isidro" className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
 
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Estado</label>
+            <label htmlFor="profesor-status" className="block text-sm text-[#1e293b] mb-1">Estado</label>
             <select
+              id="profesor-status"
               value={formStatus}
               onChange={(e) => setFormStatus(e.target.value as "active" | "inactive")}
               className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"

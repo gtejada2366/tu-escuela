@@ -33,8 +33,10 @@ const demoStudents: StudentLocal[] = [
 ];
 
 export function useStudentsData() {
-  const [students, setStudents] = useState<StudentLocal[]>(demoStudents);
-  const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState<StudentLocal[]>(() =>
+    isSupabaseEnabled() ? [] : demoStudents
+  );
+  const [loading, setLoading] = useState(isSupabaseEnabled());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,40 +49,38 @@ export function useStudentsData() {
       supabase.from("payments").select("student_id, status"),
       supabase.from("attendance").select("student_id, status"),
     ]).then(([data, paymentsResult, attendanceResult]) => {
-      if (data.length > 0) {
-        // Build payment status map: worst status per student (overdue > pending > paid)
-        const paymentMap: Record<number, string> = {};
-        for (const p of paymentsResult.data ?? []) {
-          const cur = paymentMap[p.student_id];
-          if (!cur || p.status === "overdue" || (p.status === "pending" && cur !== "overdue")) {
-            paymentMap[p.student_id] = p.status;
-          }
+      // Build payment status map: worst status per student (overdue > pending > paid)
+      const paymentMap: Record<number, string> = {};
+      for (const p of paymentsResult.data ?? []) {
+        const cur = paymentMap[p.student_id];
+        if (!cur || p.status === "overdue" || (p.status === "pending" && cur !== "overdue")) {
+          paymentMap[p.student_id] = p.status;
         }
-
-        // Build attendance percentage map
-        const attMap: Record<number, { total: number; present: number }> = {};
-        for (const a of attendanceResult.data ?? []) {
-          if (!attMap[a.student_id]) attMap[a.student_id] = { total: 0, present: 0 };
-          attMap[a.student_id].total++;
-          if (a.status === "present" || a.status === "late") attMap[a.student_id].present++;
-        }
-
-        setStudents(data.map((s) => {
-          const att = attMap[s.id];
-          return {
-            id: s.id,
-            name: s.name,
-            grade: s.grade,
-            section: s.section,
-            parent: s.parent_name ?? "",
-            paymentStatus: paymentMap[s.id] ?? "paid",
-            attendance: att ? parseFloat(((att.present / att.total) * 100).toFixed(1)) : 100,
-            avatar: generateAvatar(s.name),
-            phone: s.parent_phone ?? "",
-            address: s.address ?? "",
-          };
-        }));
       }
+
+      // Build attendance percentage map
+      const attMap: Record<number, { total: number; present: number }> = {};
+      for (const a of attendanceResult.data ?? []) {
+        if (!attMap[a.student_id]) attMap[a.student_id] = { total: 0, present: 0 };
+        attMap[a.student_id].total++;
+        if (a.status === "present" || a.status === "late") attMap[a.student_id].present++;
+      }
+
+      setStudents(data.map((s) => {
+        const att = attMap[s.id];
+        return {
+          id: s.id,
+          name: s.name,
+          grade: s.grade,
+          section: s.section,
+          parent: s.parent_name ?? "",
+          paymentStatus: paymentMap[s.id] ?? "paid",
+          attendance: att ? parseFloat(((att.present / att.total) * 100).toFixed(1)) : 100,
+          avatar: generateAvatar(s.name),
+          phone: s.parent_phone ?? "",
+          address: s.address ?? "",
+        };
+      }));
       setLoading(false);
     }).catch(() => {
       setError("Error al cargar los datos. Verifica tu conexión.");
@@ -90,7 +90,7 @@ export function useStudentsData() {
 
   const addStudent = useCallback(async (student: Omit<StudentLocal, "id" | "avatar">) => {
     if (isSupabaseEnabled()) {
-      const { data } = await studentsService.create({
+      const { data, error: err } = await studentsService.create({
         name: student.name,
         grade: student.grade,
         section: student.section,
@@ -101,6 +101,7 @@ export function useStudentsData() {
         academic_year_id: null,
         parent_email: null,
       });
+      if (err) throw new Error(err);
       if (data) {
         setStudents((prev) => [...prev, {
           ...student,

@@ -79,12 +79,14 @@ export function MiCuenta() {
   };
 
   const PasswordInput = ({
+    id,
     value,
     onChange,
     show,
     onToggle,
     placeholder,
   }: {
+    id?: string;
     value: string;
     onChange: (v: string) => void;
     show: boolean;
@@ -93,6 +95,7 @@ export function MiCuenta() {
   }) => (
     <div className="relative">
       <input
+        id={id}
         type={show ? "text" : "password"}
         value={value}
         onChange={(e) => { onChange(e.target.value); setPasswordError(""); }}
@@ -103,6 +106,7 @@ export function MiCuenta() {
         type="button"
         onClick={onToggle}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors"
+        aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
       >
         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
@@ -156,8 +160,9 @@ export function MiCuenta() {
         ) : (
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div>
-              <label className="block text-sm text-[#1e293b] mb-1">Nombre completo</label>
+              <label htmlFor="account-name" className="block text-sm text-[#1e293b] mb-1">Nombre completo</label>
               <input
+                id="account-name"
                 type="text"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
@@ -165,8 +170,9 @@ export function MiCuenta() {
               />
             </div>
             <div>
-              <label className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
+              <label htmlFor="account-email" className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
               <input
+                id="account-email"
                 type="email"
                 value={formEmail}
                 onChange={(e) => setFormEmail(e.target.value)}
@@ -210,8 +216,9 @@ export function MiCuenta() {
 
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Contraseña actual</label>
+            <label htmlFor="account-current-password" className="block text-sm text-[#1e293b] mb-1">Contraseña actual</label>
             <PasswordInput
+              id="account-current-password"
               value={oldPassword}
               onChange={setOldPassword}
               show={showOld}
@@ -220,18 +227,20 @@ export function MiCuenta() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Nueva contraseña</label>
+            <label htmlFor="account-new-password" className="block text-sm text-[#1e293b] mb-1">Nueva contraseña</label>
             <PasswordInput
+              id="account-new-password"
               value={newPassword}
               onChange={setNewPassword}
               show={showNew}
               onToggle={() => setShowNew((v) => !v)}
-              placeholder="Mínimo 4 caracteres"
+              placeholder="Mínimo 8 caracteres"
             />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Confirmar nueva contraseña</label>
+            <label htmlFor="account-confirm-password" className="block text-sm text-[#1e293b] mb-1">Confirmar nueva contraseña</label>
             <PasswordInput
+              id="account-confirm-password"
               value={confirmPassword}
               onChange={setConfirmPassword}
               show={showConfirm}

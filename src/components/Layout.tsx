@@ -126,7 +126,7 @@ export function Layout() {
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3">
           {logoUrl ? (
-            <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+            <img src={logoUrl} alt="Logo del colegio" className="w-8 h-8 rounded-lg object-cover shrink-0" />
           ) : null}
           <h1 className="text-xl text-[#2563eb] font-semibold truncate">{schoolName}</h1>
         </div>
@@ -184,6 +184,12 @@ export function Layout() {
 
   return (
     <div className="flex h-screen bg-[#f8f9fb]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-[#2563eb] focus:text-white focus:rounded-lg focus:text-sm"
+      >
+        Ir al contenido principal
+      </a>
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-border flex-col">
         <SidebarContent />
@@ -191,11 +197,11 @@ export function Layout() {
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menú de navegación">
           <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <aside className="fixed left-0 top-0 h-full w-64 bg-white flex flex-col z-50">
             <div className="absolute top-4 right-4">
-              <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-[#f8fafc] rounded-lg">
+              <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-[#f8fafc] rounded-lg" aria-label="Cerrar menú">
                 <X className="w-5 h-5 text-[#64748b]" />
               </button>
             </div>
@@ -213,6 +219,7 @@ export function Layout() {
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-2 rounded-lg hover:bg-[#f8fafc] transition-colors"
+                aria-label="Abrir menú"
               >
                 <Menu className="w-5 h-5 text-[#64748b]" />
               </button>
@@ -313,6 +320,7 @@ export function Layout() {
                 <button
                   onClick={handleNotificationsToggle}
                   className="relative p-2 rounded-lg hover:bg-[#f8fafc] transition-colors"
+                  aria-label="Notificaciones"
                 >
                   <Bell className="w-5 h-5 text-[#64748b]" />
                   {hasNewNotifications && (
@@ -354,7 +362,7 @@ export function Layout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

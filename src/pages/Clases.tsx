@@ -34,7 +34,9 @@ const emptyForm = {
 export function Clases() {
   const { showToast } = useToast();
   const { isProfesor } = useAuth();
-  const { classes: classesFromHook, loading, addClass, updateClass, professorsList } = useClassesData();
+  const { classes: classesFromHook, loading, error, addClass, updateClass, professorsList } = useClassesData();
+
+  useEffect(() => { if (error) showToast(error, "error"); }, [error]);
 
   // Profesores only see their own classes
   const classes = classesFromHook;
@@ -188,8 +190,9 @@ export function Clases() {
   const formFields = (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm text-[#1e293b] mb-1">Materia</label>
+        <label htmlFor="class-subject" className="block text-sm text-[#1e293b] mb-1">Materia</label>
         <select
+          id="class-subject"
           value={formData.subject}
           onChange={e => setFormData(prev => ({ ...prev, subject: e.target.value }))}
           className="w-full px-3 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
@@ -203,8 +206,9 @@ export function Clases() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-[#1e293b] mb-1">Grado</label>
+          <label htmlFor="class-grade" className="block text-sm text-[#1e293b] mb-1">Grado</label>
           <select
+            id="class-grade"
             value={formData.grade}
             onChange={e => setFormData(prev => ({ ...prev, grade: e.target.value }))}
             className="w-full px-3 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
@@ -221,8 +225,9 @@ export function Clases() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-[#1e293b] mb-1">Sección</label>
+          <label htmlFor="class-section" className="block text-sm text-[#1e293b] mb-1">Sección</label>
           <select
+            id="class-section"
             value={formData.section}
             onChange={e => setFormData(prev => ({ ...prev, section: e.target.value }))}
             className="w-full px-3 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
@@ -236,8 +241,9 @@ export function Clases() {
         </div>
       </div>
       <div>
-        <label className="block text-sm text-[#1e293b] mb-1">Profesor</label>
+        <label htmlFor="class-teacher" className="block text-sm text-[#1e293b] mb-1">Profesor</label>
         <select
+          id="class-teacher"
           value={formData.teacher}
           onChange={e => setFormData(prev => ({ ...prev, teacher: e.target.value }))}
           className="w-full px-3 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
@@ -250,8 +256,9 @@ export function Clases() {
         </select>
       </div>
       <div>
-        <label className="block text-sm text-[#1e293b] mb-1">Estudiantes</label>
+        <label htmlFor="class-students" className="block text-sm text-[#1e293b] mb-1">Estudiantes</label>
         <input
+          id="class-students"
           type="number"
           value={formData.students}
           onChange={e => setFormData(prev => ({ ...prev, students: Number(e.target.value) }))}
@@ -261,8 +268,9 @@ export function Clases() {
         />
       </div>
       <div>
-        <label className="block text-sm text-[#1e293b] mb-1">Horario</label>
+        <label htmlFor="class-schedule" className="block text-sm text-[#1e293b] mb-1">Horario</label>
         <input
+          id="class-schedule"
           type="text"
           value={formData.schedule}
           onChange={e => setFormData(prev => ({ ...prev, schedule: e.target.value }))}
@@ -272,8 +280,9 @@ export function Clases() {
         />
       </div>
       <div>
-        <label className="block text-sm text-[#1e293b] mb-1">Estado</label>
+        <label htmlFor="class-status" className="block text-sm text-[#1e293b] mb-1">Estado</label>
         <select
+          id="class-status"
           value={formData.status}
           onChange={e => setFormData(prev => ({ ...prev, status: e.target.value }))}
           className="w-full px-3 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
@@ -382,7 +391,7 @@ export function Clases() {
 
       <div className="bg-white rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead className="bg-[#f8fafc] border-b border-border">
               <tr>
                 <SortableHeader label="Materia" sortKey="subject" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} />
@@ -396,7 +405,13 @@ export function Clases() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {paginatedItems.map((classItem) => (
+              {paginatedItems.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-[#64748b]">
+                    No se encontraron clases
+                  </td>
+                </tr>
+              ) : paginatedItems.map((classItem) => (
                 <tr key={classItem.id} className="hover:bg-[#f8fafc] transition-colors">
                   <td className="px-6 py-4"><span className="text-sm text-[#1e293b]">{classItem.subject}</span></td>
                   <td className="px-6 py-4"><span className="text-sm text-[#1e293b]">{classItem.grade}</span></td>
@@ -408,7 +423,7 @@ export function Clases() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <Link to={`/clases/${classItem.id}`} className="text-sm text-[#2563eb] hover:text-[#1d4ed8] transition-colors flex items-center gap-1"><Eye className="w-4 h-4" /> Ver</Link>
-                      {!isProfesor && <button onClick={() => handleOpenEdit(classItem)} className="text-sm text-[#64748b] hover:text-[#1e293b] transition-colors"><Edit className="w-4 h-4" /></button>}
+                      {!isProfesor && <button onClick={() => handleOpenEdit(classItem)} className="text-sm text-[#64748b] hover:text-[#1e293b] transition-colors" aria-label="Editar clase"><Edit className="w-4 h-4" /></button>}
                     </div>
                   </td>
                 </tr>

@@ -5,12 +5,15 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    "⚠️ Supabase no configurado. La app usará datos de demostración.\n" +
-    "Para conectar con Supabase, crea un archivo .env.local con:\n" +
-    "  VITE_SUPABASE_URL=https://tu-proyecto.supabase.co\n" +
-    "  VITE_SUPABASE_ANON_KEY=tu-anon-key"
-  );
+  if (!(globalThis as Record<string, unknown>).__supabaseWarned) {
+    console.warn(
+      "⚠️ Supabase no configurado. La app usará datos de demostración.\n" +
+      "Para conectar con Supabase, crea un archivo .env.local con:\n" +
+      "  VITE_SUPABASE_URL=https://tu-proyecto.supabase.co\n" +
+      "  VITE_SUPABASE_ANON_KEY=tu-anon-key"
+    );
+    (globalThis as Record<string, unknown>).__supabaseWarned = true;
+  }
 }
 
 export const supabase = supabaseUrl && supabaseAnonKey

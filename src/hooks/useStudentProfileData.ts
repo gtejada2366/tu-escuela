@@ -53,25 +53,38 @@ function generateGradesData(avgGrade: number) {
 }
 
 function generatePaymentsHistory(paymentStatus: "paid" | "pending" | "overdue") {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth(); // 0-indexed
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const fmtMonth = (offset: number) => {
+    const d = new Date(y, m - offset, 1);
+    return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+  };
+  const fmtDate = (offset: number, day: number) => {
+    const d = new Date(y, m - offset, day);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  };
+
   if (paymentStatus === "paid") {
     return [
-      { id: 1, month: "Marzo 2026", amount: "S/ 450", status: "paid" as const, date: "01/03/2026" },
-      { id: 2, month: "Febrero 2026", amount: "S/ 450", status: "paid" as const, date: "01/02/2026" },
-      { id: 3, month: "Enero 2026", amount: "S/ 450", status: "paid" as const, date: "02/01/2026" },
+      { id: 1, month: fmtMonth(0), amount: "S/ 450", status: "paid" as const, date: fmtDate(0, 1) },
+      { id: 2, month: fmtMonth(1), amount: "S/ 450", status: "paid" as const, date: fmtDate(1, 1) },
+      { id: 3, month: fmtMonth(2), amount: "S/ 450", status: "paid" as const, date: fmtDate(2, 2) },
     ];
   }
   if (paymentStatus === "pending") {
     return [
-      { id: 1, month: "Marzo 2026", amount: "S/ 450", status: "pending" as const, date: "—" },
-      { id: 2, month: "Febrero 2026", amount: "S/ 450", status: "paid" as const, date: "03/02/2026" },
-      { id: 3, month: "Enero 2026", amount: "S/ 450", status: "paid" as const, date: "02/01/2026" },
+      { id: 1, month: fmtMonth(0), amount: "S/ 450", status: "pending" as const, date: "—" },
+      { id: 2, month: fmtMonth(1), amount: "S/ 450", status: "paid" as const, date: fmtDate(1, 3) },
+      { id: 3, month: fmtMonth(2), amount: "S/ 450", status: "paid" as const, date: fmtDate(2, 2) },
     ];
   }
   // overdue
   return [
-    { id: 1, month: "Marzo 2026", amount: "S/ 450", status: "overdue" as const, date: "—" },
-    { id: 2, month: "Febrero 2026", amount: "S/ 450", status: "overdue" as const, date: "—" },
-    { id: 3, month: "Enero 2026", amount: "S/ 450", status: "paid" as const, date: "05/01/2026" },
+    { id: 1, month: fmtMonth(0), amount: "S/ 450", status: "overdue" as const, date: "—" },
+    { id: 2, month: fmtMonth(1), amount: "S/ 450", status: "overdue" as const, date: "—" },
+    { id: 3, month: fmtMonth(2), amount: "S/ 450", status: "paid" as const, date: fmtDate(2, 5) },
   ];
 }
 

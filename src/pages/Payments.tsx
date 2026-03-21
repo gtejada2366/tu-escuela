@@ -209,7 +209,7 @@ export function Payments() {
             <span className="text-sm text-[#64748b]">Pagos Recibidos</span>
           </div>
           <p className="text-2xl text-[#1e293b] mb-1">S/ {totalPaid.toLocaleString()}</p>
-          <p className="text-xs text-[#10b981]">Marzo 2026</p>
+          <p className="text-xs text-[#10b981]">{new Date().toLocaleString("es-PE", { month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}</p>
         </div>
         <div className="bg-white rounded-lg p-6 border border-border shadow-sm">
           <div className="flex items-center gap-3 mb-3">
@@ -240,7 +240,7 @@ export function Payments() {
       </div>
 
       <div className="bg-white rounded-lg p-6 border border-border shadow-sm">
-        <h3 className="text-lg text-[#1e293b] mb-4">Evolución de Pagos - 2026</h3>
+        <h3 className="text-lg text-[#1e293b] mb-4">Evolución de Pagos - {new Date().getFullYear()}</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -296,7 +296,7 @@ export function Payments() {
 
       <div className="bg-white rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[540px]">
             <thead className="bg-[#f8fafc] border-b border-border">
               <tr>
                 <SortableHeader label="Estudiante" sortKey="student" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} />
@@ -309,7 +309,13 @@ export function Payments() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {paginatedPayments.map((payment) => (
+              {paginatedPayments.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-[#64748b]">
+                    No se encontraron pagos
+                  </td>
+                </tr>
+              ) : paginatedPayments.map((payment) => (
                 <tr key={payment.id} className="hover:bg-[#f8fafc] transition-colors">
                   <td className="px-6 py-4"><span className="text-sm text-[#1e293b]">{payment.student}</span></td>
                   <td className="px-6 py-4 hidden md:table-cell"><span className="text-sm text-[#64748b]">{payment.grade}</span></td>

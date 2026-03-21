@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { isSupabaseEnabled } from "../lib/supabase";
 import { attendanceService } from "../services/attendance.service";
 import { classesService } from "../services/classes.service";
+import { studentsService } from "../services/students.service";
+import { useAuth } from "../contexts/AuthContext";
 
 export type AttendanceStatus = "Presente" | "Ausente" | "Tardanza";
 
@@ -68,35 +70,49 @@ function toISODate(d: Date): string {
 }
 
 export function useAttendanceData() {
-  const [classesData, setClassesData] = useState<ClassAttendance[]>(buildDemoData);
-  const [selectedDate, setSelectedDate] = useState(() => new Date(2026, 2, 8));
-  const [loading, setLoading] = useState(false);
+  const { user, isProfesor } = useAuth();
+  const [classesData, setClassesData] = useState<ClassAttendance[]>(() =>
+    isSupabaseEnabled() ? [] : buildDemoData()
+  );
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [loading, setLoading] = useState(isSupabaseEnabled());
   const [error, setError] = useState<string | null>(null);
 
   // Fetch when date changes (Supabase mode)
+  // Director: all active classes. Profesor: only their assigned classes.
   useEffect(() => {
     if (!isSupabaseEnabled()) return;
     setLoading(true);
     setError(null);
-    attendanceService.getSummaryByDate(toISODate(selectedDate)).then((data) => {
-      if (data.length > 0) {
-        setClassesData(data.map((s) => ({
-          id: s.class_id,
-          grade: s.grade,
-          total: s.total,
-          present: s.present,
-          absent: s.absent,
-          late: s.late,
-          percentage: s.percentage,
+    const fetchClasses = isProfesor && user?.uid
+      ? classesService.getByTeacher(user.uid)
+      : classesService.getAll();
+    Promise.all([
+      fetchClasses,
+      attendanceService.getSummaryByDate(toISODate(selectedDate)),
+    ]).then(([classes, summaries]) => {
+      const summaryMap = new Map(summaries.map((s) => [s.class_id, s]));
+      const activeClasses = classes.filter((c) => c.status === "active");
+      setClassesData(activeClasses.map((c) => {
+        const s = summaryMap.get(c.id);
+        const total = s?.total ?? (Number(c.student_count) || 0);
+        return {
+          id: c.id,
+          grade: `${c.grade} ${c.section}`.trim(),
+          total,
+          present: s?.present ?? 0,
+          absent: s?.absent ?? 0,
+          late: s?.late ?? 0,
+          percentage: s?.percentage ?? 0,
           students: [],
-        })));
-      }
+        };
+      }));
       setLoading(false);
     }).catch(() => {
       setError("Error al cargar los datos. Verifica tu conexión.");
       setLoading(false);
     });
-  }, [selectedDate]);
+  }, [selectedDate, isProfesor, user]);
 
   const changeDate = useCallback((date: Date) => {
     setSelectedDate(date);
@@ -140,23 +156,49 @@ export function useAttendanceData() {
 
     const statusMap: Record<string, AttendanceStatus> = { present: "Presente", absent: "Ausente", late: "Tardanza" };
 
-    const [enrollments, records] = await Promise.all([
+    const [enrollments, records, classInfo] = await Promise.all([
       classesService.getEnrollments(classId),
       attendanceService.getByClassAndDate(classId, toISODate(selectedDate)),
+      classesService.getById(classId),
     ]);
 
-    const students: StudentRecord[] = enrollments.map((e) => {
-      const record = records.find((r) => r.student_id === e.student_id);
-      return {
-        id: e.student_id,
-        name: e.student_name,
-        status: record ? statusMap[record.status] ?? "Presente" : "Presente",
-      };
-    });
+    let students: StudentRecord[];
+
+    if (enrollments.length > 0) {
+      // Use enrollments when available
+      students = enrollments.map((e) => {
+        const record = records.find((r) => r.student_id === e.student_id);
+        return {
+          id: e.student_id,
+          name: e.student_name,
+          status: record ? statusMap[record.status] ?? "Presente" : "Presente",
+        };
+      });
+    } else if (classInfo) {
+      // Fallback: load students by matching grade (and section if set)
+      const gradeStudents = await studentsService.getByGrade(
+        classInfo.grade,
+        classInfo.section || undefined,
+      );
+      students = gradeStudents
+        .filter((s) => s.status === "active")
+        .map((s) => {
+          const record = records.find((r) => r.student_id === s.id);
+          return {
+            id: s.id,
+            name: s.name,
+            status: record ? statusMap[record.status] ?? "Presente" : "Presente",
+          };
+        });
+    } else {
+      students = [];
+    }
 
     // Update classesData with the fetched students
     setClassesData((prev) =>
-      prev.map((cls) => cls.id === classId ? { ...cls, students } : cls)
+      prev.map((cls) => cls.id === classId
+        ? { ...cls, students, total: students.length > cls.total ? students.length : cls.total }
+        : cls)
     );
 
     return students;

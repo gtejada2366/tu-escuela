@@ -253,7 +253,16 @@ export function Students() {
           <p className="text-sm text-[#64748b]">Gestiona todos los estudiantes del colegio</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setFormName("");
+            setFormGrade("");
+            setFormSection("");
+            setFormParent("");
+            setFormPaymentStatus("paid");
+            setFormPhone("");
+            setFormAddress("");
+            setShowAddModal(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -339,7 +348,7 @@ export function Students() {
 
       <div className="bg-white rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[540px]">
             <thead className="bg-[#f8fafc] border-b border-border">
               <tr>
                 <SortableHeader label="Estudiante" sortKey="name" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} />
@@ -348,7 +357,7 @@ export function Students() {
                 <SortableHeader label="Apoderado" sortKey="parent" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
                 <SortableHeader label="Estado de Pago" sortKey="paymentStatus" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} />
                 <SortableHeader label="Asistencia" sortKey="attendance" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} className="hidden md:table-cell" />
-                <th className="px-6 py-3 text-left text-xs text-[#64748b] uppercase tracking-wider">Acciones</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs text-[#64748b] uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -367,11 +376,11 @@ export function Students() {
                   <td className="px-6 py-4 hidden lg:table-cell"><span className="text-sm text-[#64748b]">{student.parent}</span></td>
                   <td className="px-6 py-4">{getPaymentBadge(student.paymentStatus)}</td>
                   <td className="px-6 py-4 hidden md:table-cell"><span className={`text-sm ${getAttendanceColor(student.attendance)}`}>{student.attendance}%</span></td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Link to={`/estudiantes/${student.id}`} className="text-sm text-[#2563eb] hover:text-[#1d4ed8] transition-colors">Ver</Link>
-                      <button onClick={() => handleOpenEdit(student)} className="text-sm text-[#64748b] hover:text-[#1e293b] transition-colors">Editar</button>
-                      <button onClick={() => handleOpenDelete(student)} className="text-sm text-[#dc2626] hover:text-[#b91c1c] transition-colors">Eliminar</button>
+                  <td className="px-3 sm:px-6 py-4">
+                    <div className="flex items-center gap-1 sm:gap-2 whitespace-nowrap">
+                      <Link to={`/estudiantes/${student.id}`} className="text-xs sm:text-sm text-[#2563eb] hover:text-[#1d4ed8] transition-colors">Ver</Link>
+                      <button onClick={() => handleOpenEdit(student)} className="text-xs sm:text-sm text-[#64748b] hover:text-[#1e293b] transition-colors">Editar</button>
+                      <button onClick={() => handleOpenDelete(student)} className="text-xs sm:text-sm text-[#dc2626] hover:text-[#b91c1c] transition-colors">Eliminar</button>
                     </div>
                   </td>
                 </tr>
@@ -424,8 +433,9 @@ export function Students() {
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Agregar Estudiante">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Nombre completo</label>
+            <label htmlFor="student-name" className="block text-sm text-[#1e293b] mb-1">Nombre completo</label>
             <input
+              id="student-name"
               type="text"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
@@ -434,8 +444,9 @@ export function Students() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Grado</label>
+            <label htmlFor="student-grade" className="block text-sm text-[#1e293b] mb-1">Grado</label>
             <select
+              id="student-grade"
               value={formGrade}
               onChange={(e) => setFormGrade(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
@@ -451,8 +462,9 @@ export function Students() {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Seccion</label>
+            <label htmlFor="student-section" className="block text-sm text-[#1e293b] mb-1">Seccion</label>
             <input
+              id="student-section"
               type="text"
               value={formSection}
               onChange={(e) => setFormSection(e.target.value)}
@@ -461,8 +473,9 @@ export function Students() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Nombre del apoderado</label>
+            <label htmlFor="student-parent" className="block text-sm text-[#1e293b] mb-1">Nombre del apoderado</label>
             <input
+              id="student-parent"
               type="text"
               value={formParent}
               onChange={(e) => setFormParent(e.target.value)}
@@ -471,16 +484,17 @@ export function Students() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Teléfono del apoderado</label>
-            <input type="text" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Ej: +51 987 654 321" className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="student-phone" className="block text-sm text-[#1e293b] mb-1">Teléfono del apoderado</label>
+            <input id="student-phone" type="text" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Ej: +51 987 654 321" className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Dirección</label>
-            <input type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="Ej: Av. Los Olivos 234, San Isidro" className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="student-address" className="block text-sm text-[#1e293b] mb-1">Dirección</label>
+            <input id="student-address" type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="Ej: Av. Los Olivos 234, San Isidro" className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Estado de pago</label>
+            <label htmlFor="student-payment-status" className="block text-sm text-[#1e293b] mb-1">Estado de pago</label>
             <select
+              id="student-payment-status"
               value={formPaymentStatus}
               onChange={(e) => setFormPaymentStatus(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm"
@@ -511,12 +525,12 @@ export function Students() {
       <Modal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setEditingStudent(null); }} title="Editar Estudiante">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Nombre completo</label>
-            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="edit-student-name" className="block text-sm text-[#1e293b] mb-1">Nombre completo</label>
+            <input id="edit-student-name" type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Grado</label>
-            <select value={formGrade} onChange={(e) => setFormGrade(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm">
+            <label htmlFor="edit-student-grade" className="block text-sm text-[#1e293b] mb-1">Grado</label>
+            <select id="edit-student-grade" value={formGrade} onChange={(e) => setFormGrade(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm">
               <option value="">Seleccionar grado</option>
               {gradesByLevel.map((group) => (
                 <optgroup key={group.level} label={group.level}>
@@ -528,24 +542,24 @@ export function Students() {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Seccion</label>
-            <input type="text" value={formSection} onChange={(e) => setFormSection(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="edit-student-section" className="block text-sm text-[#1e293b] mb-1">Seccion</label>
+            <input id="edit-student-section" type="text" value={formSection} onChange={(e) => setFormSection(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Nombre del apoderado</label>
-            <input type="text" value={formParent} onChange={(e) => setFormParent(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="edit-student-parent" className="block text-sm text-[#1e293b] mb-1">Nombre del apoderado</label>
+            <input id="edit-student-parent" type="text" value={formParent} onChange={(e) => setFormParent(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Teléfono del apoderado</label>
-            <input type="text" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="edit-student-phone" className="block text-sm text-[#1e293b] mb-1">Teléfono del apoderado</label>
+            <input id="edit-student-phone" type="text" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Dirección</label>
-            <input type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
+            <label htmlFor="edit-student-address" className="block text-sm text-[#1e293b] mb-1">Dirección</label>
+            <input id="edit-student-address" type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-[#1e293b] mb-1">Estado de pago</label>
-            <select value={formPaymentStatus} onChange={(e) => setFormPaymentStatus(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm">
+            <label htmlFor="edit-student-payment-status" className="block text-sm text-[#1e293b] mb-1">Estado de pago</label>
+            <select id="edit-student-payment-status" value={formPaymentStatus} onChange={(e) => setFormPaymentStatus(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm">
               <option value="paid">Pagado</option>
               <option value="pending">Pendiente</option>
               <option value="overdue">Vencido</option>

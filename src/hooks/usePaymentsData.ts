@@ -12,29 +12,46 @@ export interface PaymentLocal {
   status: "paid" | "pending" | "overdue";
 }
 
-const demoPayments: PaymentLocal[] = [
-  { id: 1, student: "María González Pérez", grade: "5° Primaria A", amount: 450, dueDate: "01/03/2026", paidDate: "28/02/2026", status: "paid" },
-  { id: 2, student: "Juan Pérez Rodríguez", grade: "4° Primaria B", amount: 450, dueDate: "01/03/2026", paidDate: "01/03/2026", status: "paid" },
-  { id: 3, student: "Sofía Martínez López", grade: "3° Secundaria A", amount: 450, dueDate: "01/03/2026", paidDate: "-", status: "pending" },
-  { id: 4, student: "Diego Ramírez Silva", grade: "2° Secundaria B", amount: 450, dueDate: "01/02/2026", paidDate: "-", status: "overdue" },
-  { id: 5, student: "Valentina Torres Castro", grade: "4 años A", amount: 350, dueDate: "01/03/2026", paidDate: "05/03/2026", status: "paid" },
-  { id: 6, student: "Mateo Flores Ruiz", grade: "1° Secundaria A", amount: 450, dueDate: "01/03/2026", paidDate: "02/03/2026", status: "paid" },
-  { id: 7, student: "Isabella Vargas Díaz", grade: "5 años B", amount: 350, dueDate: "01/03/2026", paidDate: "-", status: "pending" },
-  { id: 8, student: "Sebastián Morales Ríos", grade: "1° Primaria A", amount: 450, dueDate: "01/03/2026", paidDate: "03/03/2026", status: "paid" },
-  { id: 9, student: "Camila Herrera Ortiz", grade: "6° Primaria B", amount: 450, dueDate: "01/03/2026", paidDate: "-", status: "pending" },
-  { id: 10, student: "Alejandro Soto Méndez", grade: "2° Primaria B", amount: 450, dueDate: "01/02/2026", paidDate: "-", status: "overdue" },
-  { id: 11, student: "Luciana Castro Paredes", grade: "5° Primaria A", amount: 450, dueDate: "01/03/2026", paidDate: "01/03/2026", status: "paid" },
-  { id: 12, student: "Emilio Guzmán Vega", grade: "3° Primaria A", amount: 450, dueDate: "01/03/2026", paidDate: "-", status: "pending" },
-  { id: 13, student: "Renata Delgado Cruz", grade: "4° Primaria A", amount: 450, dueDate: "01/03/2026", paidDate: "04/03/2026", status: "paid" },
-  { id: 14, student: "Nicolás Peña Romero", grade: "4° Secundaria A", amount: 450, dueDate: "01/02/2026", paidDate: "-", status: "overdue" },
-  { id: 15, student: "Antonella Ríos Luna", grade: "3 años B", amount: 350, dueDate: "01/03/2026", paidDate: "02/03/2026", status: "paid" },
-  { id: 16, student: "Gabriel Navarro Campos", grade: "2° Primaria A", amount: 450, dueDate: "01/03/2026", paidDate: "-", status: "pending" },
-  { id: 17, student: "Mariana León Salazar", grade: "5° Secundaria B", amount: 450, dueDate: "01/03/2026", paidDate: "06/03/2026", status: "paid" },
-  { id: 18, student: "Daniel Aguilar Ponce", grade: "4° Primaria B", amount: 450, dueDate: "01/03/2026", paidDate: "-", status: "pending" },
-  { id: 19, student: "Victoria Medina Torres", grade: "3° Secundaria B", amount: 450, dueDate: "01/02/2026", paidDate: "-", status: "overdue" },
-  { id: 20, student: "Tomás Reyes Figueroa", grade: "6° Primaria A", amount: 450, dueDate: "01/03/2026", paidDate: "01/03/2026", status: "paid" },
-  { id: 21, student: "Paula Jiménez Bravo", grade: "1° Primaria A", amount: 450, dueDate: "01/03/2026", paidDate: "-", status: "pending" },
-];
+function dmyDate(d: Date): string {
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+function buildDemoPayments(): PaymentLocal[] {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth(); // 0-indexed
+  const curDue = dmyDate(new Date(y, m, 1));
+  const prevDue = dmyDate(new Date(y, m - 1, 1));
+  // Simulated paid dates: a few days into the current month
+  const paid = (day: number) => dmyDate(new Date(y, m, day));
+  const paidPrev = dmyDate(new Date(y, m - 1, 28));
+
+  return [
+    { id: 1, student: "María González Pérez", grade: "5° Primaria A", amount: 450, dueDate: curDue, paidDate: paidPrev, status: "paid" },
+    { id: 2, student: "Juan Pérez Rodríguez", grade: "4° Primaria B", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid" },
+    { id: 3, student: "Sofía Martínez López", grade: "3° Secundaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
+    { id: 4, student: "Diego Ramírez Silva", grade: "2° Secundaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue" },
+    { id: 5, student: "Valentina Torres Castro", grade: "4 años A", amount: 350, dueDate: curDue, paidDate: paid(5), status: "paid" },
+    { id: 6, student: "Mateo Flores Ruiz", grade: "1° Secundaria A", amount: 450, dueDate: curDue, paidDate: paid(2), status: "paid" },
+    { id: 7, student: "Isabella Vargas Díaz", grade: "5 años B", amount: 350, dueDate: curDue, paidDate: "-", status: "pending" },
+    { id: 8, student: "Sebastián Morales Ríos", grade: "1° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(3), status: "paid" },
+    { id: 9, student: "Camila Herrera Ortiz", grade: "6° Primaria B", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
+    { id: 10, student: "Alejandro Soto Méndez", grade: "2° Primaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue" },
+    { id: 11, student: "Luciana Castro Paredes", grade: "5° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid" },
+    { id: 12, student: "Emilio Guzmán Vega", grade: "3° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
+    { id: 13, student: "Renata Delgado Cruz", grade: "4° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(4), status: "paid" },
+    { id: 14, student: "Nicolás Peña Romero", grade: "4° Secundaria A", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue" },
+    { id: 15, student: "Antonella Ríos Luna", grade: "3 años B", amount: 350, dueDate: curDue, paidDate: paid(2), status: "paid" },
+    { id: 16, student: "Gabriel Navarro Campos", grade: "2° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
+    { id: 17, student: "Mariana León Salazar", grade: "5° Secundaria B", amount: 450, dueDate: curDue, paidDate: paid(6), status: "paid" },
+    { id: 18, student: "Daniel Aguilar Ponce", grade: "4° Primaria B", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
+    { id: 19, student: "Victoria Medina Torres", grade: "3° Secundaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue" },
+    { id: 20, student: "Tomás Reyes Figueroa", grade: "6° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid" },
+    { id: 21, student: "Paula Jiménez Bravo", grade: "1° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
+  ];
+}
+
+const demoPayments: PaymentLocal[] = buildDemoPayments();
 
 function formatDateDMY(dateStr: string | null): string {
   if (!dateStr) return "-";
@@ -43,8 +60,10 @@ function formatDateDMY(dateStr: string | null): string {
 }
 
 export function usePaymentsData() {
-  const [payments, setPayments] = useState<PaymentLocal[]>(demoPayments);
-  const [loading, setLoading] = useState(false);
+  const [payments, setPayments] = useState<PaymentLocal[]>(() =>
+    isSupabaseEnabled() ? [] : demoPayments
+  );
+  const [loading, setLoading] = useState(isSupabaseEnabled());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,17 +71,15 @@ export function usePaymentsData() {
     setLoading(true);
     setError(null);
     paymentsService.getAll().then((data) => {
-      if (data.length > 0) {
-        setPayments(data.map((p) => ({
-          id: p.id,
-          student: p.student_name,
-          grade: `${p.student_grade} ${p.student_section}`,
-          amount: Number(p.amount),
-          dueDate: formatDateDMY(p.due_date),
-          paidDate: formatDateDMY(p.paid_date),
-          status: p.status,
-        })));
-      }
+      setPayments(data.map((p) => ({
+        id: p.id,
+        student: p.student_name,
+        grade: `${p.student_grade} ${p.student_section}`,
+        amount: Number(p.amount),
+        dueDate: formatDateDMY(p.due_date),
+        paidDate: formatDateDMY(p.paid_date),
+        status: p.status,
+      })));
       setLoading(false);
     }).catch(() => {
       setError("Error al cargar los datos. Verifica tu conexión.");

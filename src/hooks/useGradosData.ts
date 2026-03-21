@@ -117,10 +117,10 @@ export function useGradosData() {
 
         let students = allStudents;
 
-        // Professors: filter to only grades where they teach or are assigned
-        if (isProfesor && user?.uid) {
-          const allowedGrades = new Set<string>();
+        // Build set of allowed grades for professor
+        const allowedGrades = new Set<string>();
 
+        if (isProfesor && user?.uid) {
           // Grades from classes table
           if (classes) {
             for (const c of classes) allowedGrades.add(c.grade);
@@ -147,13 +147,35 @@ export function useGradosData() {
           }
         }
 
-        setGrades(buildGradeGroups(students.map((s) => ({
+        const groups = buildGradeGroups(students.map((s) => ({
           id: s.id,
           name: s.name,
           grade: s.grade,
           section: s.section,
           status: s.status,
-        }))));
+        })));
+
+        // Ensure all assigned grades appear even if they have no students yet
+        const existingGradeNames = new Set(groups.map((g) => g.grade));
+        for (const grade of allowedGrades) {
+          if (!existingGradeNames.has(grade)) {
+            groups.push({ grade, sections: [], totalStudents: 0 });
+          }
+        }
+
+        // Re-sort after adding empty grades
+        const GRADE_ORDER_LOCAL = [
+          "3 años", "4 años", "5 años",
+          "1° Primaria", "2° Primaria", "3° Primaria", "4° Primaria", "5° Primaria", "6° Primaria",
+          "1° Secundaria", "2° Secundaria", "3° Secundaria", "4° Secundaria", "5° Secundaria",
+        ];
+        groups.sort((a, b) => {
+          const ai = GRADE_ORDER_LOCAL.indexOf(a.grade);
+          const bi = GRADE_ORDER_LOCAL.indexOf(b.grade);
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        });
+
+        setGrades(groups);
       } catch {
         setError("Error al cargar los grados. Verifica tu conexión.");
       } finally {

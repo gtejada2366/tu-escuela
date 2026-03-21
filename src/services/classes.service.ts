@@ -51,6 +51,13 @@ async function create(cls: ClassInsert): Promise<{ data: ClassRecord | null; err
 async function update(id: number, changes: ClassUpdate): Promise<string | null> {
   if (!supabase) return "Supabase no configurado";
   const { error } = await supabase.from("classes").update(changes).eq("id", id);
+  // If grade_config column doesn't exist yet, retry without it
+  if (error && error.message?.includes("grade_config")) {
+    const { grade_config: _, ...rest } = changes;
+    if (Object.keys(rest).length === 0) return null; // only grade_config was being updated
+    const { error: err2 } = await supabase.from("classes").update(rest).eq("id", id);
+    return err2?.message ?? null;
+  }
   return error?.message ?? null;
 }
 

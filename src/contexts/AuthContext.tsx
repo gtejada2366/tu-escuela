@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq("id", session.user.id)
           .maybeSingle();
         if (profileError) {
-          console.error("Session restore: error loading profile", profileError);
+          // Profile load failed — user will see login screen and can retry
         } else if (profile && profile.status === "active") {
           setUser({
             id: 0,
@@ -132,7 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .eq("id", session.user.id)
             .maybeSingle();
           if (profileError) {
-            console.error("onAuthStateChange: error loading profile", profileError);
             return;
           }
           if (profile && profile.status === "active") {
@@ -179,7 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profileError) {
-        console.error("Error al consultar perfil:", profileError);
         return `Error al cargar perfil: ${profileError.message}`;
       }
       if (!profile) return "Perfil no encontrado. Contacta al administrador.";
@@ -272,33 +270,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── User management (Director) ──────────────────────────
   const addUser = useCallback(async (userData: Omit<RegisteredUser, "id" | "avatar">) => {
     if (supabase) {
-      // Save the director's session before signUp (signUp auto-signs-in the new user)
-      const { data: { session: directorSession } } = await supabase.auth.getSession();
-
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: { data: { name: userData.name, role: userData.role } },
+      // Use Edge Function to create user with service_role key
+      // This avoids the auto-sign-in issue with supabase.auth.signUp()
+      const { data, error: fnError } = await supabase.functions.invoke("create-user", {
+        body: {
+          email: userData.email,
+          password: userData.password,
+          name: userData.name,
+          role: userData.role,
+        },
       });
-      if (signUpError) throw new Error(signUpError.message);
 
-      // Supabase returns a fake user with no identities when email already exists
-      if (signUpData.user && signUpData.user.identities?.length === 0) {
-        throw new Error("Ya existe un usuario con ese correo electrónico");
-      }
-
-      // Restore the director's session so they stay logged in
-      if (directorSession) {
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: directorSession.access_token,
-          refresh_token: directorSession.refresh_token,
-        });
-        if (sessionError) {
-          console.error("Error restaurando sesión del director:", sessionError);
-          // Re-authenticate the director by refreshing from storage
-          await supabase.auth.refreshSession();
-        }
-      }
+      if (fnError) throw new Error(fnError.message);
+      if (data?.error) throw new Error(data.error);
 
       // Profile is auto-created by trigger — reload registry
       const profiles = await fetchSupabaseProfiles();

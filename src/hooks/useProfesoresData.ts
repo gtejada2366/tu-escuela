@@ -63,9 +63,64 @@ export function generateAvatar(name: string): string {
   return first + last;
 }
 
+/**
+ * Sync the classes table so that each subject × grade combination assigned
+ * to this teacher has a corresponding class row.
+ * - Creates missing classes.
+ * - Unassigns teacher from classes whose subject/grade no longer match.
+ */
+async function syncProfessorClasses(
+  teacherId: string,
+  subjects: string[],
+  grades: string[],
+): Promise<void> {
+  if (!isSupabaseEnabled()) return;
+
+  // Build the set of desired (subject, grade) pairs
+  const desired = new Set<string>();
+  for (const subject of subjects) {
+    for (const grade of grades) {
+      desired.add(`${subject}||${grade}`);
+    }
+  }
+
+  // Fetch existing classes assigned to this teacher
+  const existing = await classesService.getByTeacher(teacherId);
+
+  // Determine which existing classes are no longer in the desired set → unassign
+  for (const cls of existing) {
+    const key = `${cls.subject}||${cls.grade}`;
+    if (desired.has(key)) {
+      // Already exists, remove from desired so we don't duplicate
+      desired.delete(key);
+    } else {
+      // No longer matches — unassign teacher
+      await classesService.update(cls.id, { teacher_id: null });
+    }
+  }
+
+  // Create missing classes for remaining desired combos
+  for (const key of desired) {
+    const [subject, grade] = key.split("||");
+    await classesService.create({
+      subject,
+      grade,
+      section: "",
+      teacher_id: teacherId,
+      schedule: null,
+      classroom: null,
+      status: "active",
+      academic_year_id: null,
+      grade_config: null,
+    });
+  }
+}
+
 export function useProfesoresData() {
-  const [professors, setProfessors] = useState<Professor[]>(demoProfessors);
-  const [loading, setLoading] = useState(false);
+  const [professors, setProfessors] = useState<Professor[]>(() =>
+    isSupabaseEnabled() ? [] : demoProfessors
+  );
+  const [loading, setLoading] = useState(isSupabaseEnabled());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,8 +133,7 @@ export function useProfesoresData() {
       classesService.getAll(),
     ]).then(([profiles, classes]) => {
       const professorProfiles = profiles.filter((p) => p.role === "profesor");
-      if (professorProfiles.length > 0) {
-        const mapped = professorProfiles.map((p, idx) => {
+      const mapped = professorProfiles.map((p, idx) => {
           const teacherClasses = classes.filter((c) => c.teacher_id === p.id);
           // Use stored specializations/grades, fallback to derived from classes
           const derivedSubjects = [...new Set(teacherClasses.map((c) => c.subject))].join(", ");
@@ -100,8 +154,7 @@ export function useProfesoresData() {
             address: p.address ?? "",
           };
         });
-        setProfessors(mapped);
-      }
+      setProfessors(mapped);
       setLoading(false);
     }).catch(() => {
       setError("Error al cargar los datos. Verifica tu conexión.");
@@ -146,11 +199,19 @@ export function useProfesoresData() {
           phone: data.phone || null,
           address: data.address || null,
         });
+
+        // Auto-create classes for each subject × grade combination
+        const subjects = (data.subject || "").split(", ").filter(Boolean);
+        const grades = (data.grades || "").split(", ").filter(Boolean);
+        if (subjects.length > 0 && grades.length > 0) {
+          await syncProfessorClasses(newProfile.id, subjects, grades);
+        }
       }
     }
 
+    const classCount = (data.subject || "").split(", ").filter(Boolean).length * (data.grades || "").split(", ").filter(Boolean).length;
     const newId = Math.max(0, ...professors.map((p) => p.id)) + 1;
-    const newProfessor: Professor = { id: newId, ...data, classes: 0, avatar };
+    const newProfessor: Professor = { id: newId, ...data, classes: classCount, avatar };
     setProfessors((prev) => [...prev, newProfessor]);
     return newProfessor;
   }, [professors]);
@@ -169,12 +230,25 @@ export function useProfesoresData() {
           ...(data.phone !== undefined && { phone: data.phone || null }),
           ...(data.address !== undefined && { address: data.address || null }),
         });
+
+        // Sync classes when subjects or grades change
+        if (data.subject !== undefined || data.grades !== undefined) {
+          const newSubjects = (data.subject ?? prof.subject).split(", ").filter((s) => s && s !== "Sin asignar");
+          const newGrades = (data.grades ?? prof.grades).split(", ").filter((s) => s && s !== "Sin asignar");
+          if (newSubjects.length > 0 && newGrades.length > 0) {
+            await syncProfessorClasses(prof.uid, newSubjects, newGrades);
+          }
+        }
       }
     }
 
+    const classCount = data.subject !== undefined || data.grades !== undefined
+      ? (data.subject ?? "").split(", ").filter((s) => s && s !== "Sin asignar").length *
+        (data.grades ?? "").split(", ").filter((s) => s && s !== "Sin asignar").length
+      : undefined;
     setProfessors((prev) =>
       prev.map((p) =>
-        p.id === id ? { ...p, ...data, ...(avatar ? { avatar } : {}) } : p
+        p.id === id ? { ...p, ...data, ...(avatar ? { avatar } : {}), ...(classCount !== undefined ? { classes: classCount } : {}) } : p
       )
     );
   }, [professors]);

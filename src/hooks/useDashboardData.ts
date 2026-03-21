@@ -46,6 +46,8 @@ export interface DirectorStats {
   totalProfessors: string;
   activeClasses: string;
   attendanceToday: string;
+  newStudentsThisMonth: number;
+  attendanceDelta: number | null;
   enrollment: EnrollmentPoint[];
   attendance: AttendanceSummary;
   payments: PaymentSummary;
@@ -57,6 +59,7 @@ export interface ProfesorStats {
   myStudents: string;
   avgAttendance: string;
   pendingEvals: string;
+  attendanceDelta: number | null;
   attendance: AttendanceSummary;
   recentActivity: ActivityItem[];
   todayClasses: TeacherClass[];
@@ -71,6 +74,8 @@ const demoDirectorStats: DirectorStats = {
   totalProfessors: "8",
   activeClasses: "7",
   attendanceToday: "94.2%",
+  newStudentsThisMonth: 22,
+  attendanceDelta: 1.3,
   enrollment: [
     { month: "Ene", students: 245 },
     { month: "Feb", students: 268 },
@@ -95,6 +100,7 @@ const demoProfesorStats: ProfesorStats = {
   myStudents: "83",
   avgAttendance: "95.1%",
   pendingEvals: "2",
+  attendanceDelta: 0.8,
   attendance: { present: 79, presentPct: "95.2%", absent: 3, absentPct: "3.6%", late: 1, latePct: "1.2%" },
   recentActivity: [
     { id: 1, text: "Calificaciones de Semana 4 actualizadas", time: "Hace 1 hora", iconName: "CheckCircle2" },
@@ -132,11 +138,27 @@ function computeAttendanceSummary(records: { status: string }[]): AttendanceSumm
   return { present, presentPct: pct(present), absent, absentPct: pct(absent), late, latePct: pct(late) };
 }
 
+const emptyDirectorStats: DirectorStats = {
+  totalStudents: "0", totalProfessors: "0", activeClasses: "0", attendanceToday: "0%",
+  newStudentsThisMonth: 0, attendanceDelta: null,
+  enrollment: [], attendance: emptyAttendance,
+  payments: { received: "S/ 0", pending: "S/ 0", overdue: "S/ 0", collectionRate: "0%" },
+  recentActivity: [],
+};
+const emptyProfesorStats: ProfesorStats = {
+  myClasses: "0", myStudents: "0", avgAttendance: "0%", pendingEvals: "0",
+  attendanceDelta: null, attendance: emptyAttendance, recentActivity: [], todayClasses: [],
+};
+
 export function useDashboardData() {
   const { isProfesor, user } = useAuth();
-  const [directorStats, setDirectorStats] = useState<DirectorStats>(demoDirectorStats);
-  const [profesorStats, setProfesorStats] = useState<ProfesorStats>(demoProfesorStats);
-  const [loading, setLoading] = useState(false);
+  const [directorStats, setDirectorStats] = useState<DirectorStats>(() =>
+    isSupabaseEnabled() ? emptyDirectorStats : demoDirectorStats
+  );
+  const [profesorStats, setProfesorStats] = useState<ProfesorStats>(() =>
+    isSupabaseEnabled() ? emptyProfesorStats : demoProfesorStats
+  );
+  const [loading, setLoading] = useState(isSupabaseEnabled());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -147,6 +169,12 @@ export function useDashboardData() {
 
     if (!isProfesor) {
       // ── Director dashboard ─────────────────────────────────
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const yesterday = new Date(Date.now() - 86400000);
+      const yesterdayStr = toISODate(yesterday);
+
       Promise.all([
         studentsService.count(),
         authService.getAllUsers(),
@@ -160,7 +188,11 @@ export function useDashboardData() {
         supabase.from("payment_summary").select("student_name, amount, paid_date").eq("status", "paid").order("paid_date", { ascending: false }).limit(3),
         // Recent enrollments
         supabase.from("students").select("name, grade, created_at").order("created_at", { ascending: false }).limit(3),
-      ]).then(([studentCount, profiles, classes, paymentStats, attResult, studentsResult, recentPaymentsResult, recentStudentsResult]) => {
+        // New students this month
+        supabase.from("students").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth.toISOString()),
+        // Attendance yesterday (for delta)
+        supabase.from("attendance").select("status").eq("date", yesterdayStr),
+      ]).then(([studentCount, profiles, classes, paymentStats, attResult, studentsResult, recentPaymentsResult, recentStudentsResult, newStudentsResult, yesterdayAttResult]) => {
         const professorCount = profiles.filter((p) => p.role === "profesor" && p.status === "active").length;
         const activeClasses = classes.filter((c) => c.status === "active").length;
         const totalPayments = paymentStats.paid + paymentStats.pending + paymentStats.overdue;
@@ -195,6 +227,19 @@ export function useDashboardData() {
           enrollment.push({ month: monthNames[currentMonth], students: studentCount });
         }
 
+        // New students this month
+        const newStudentsThisMonth = newStudentsResult.count ?? 0;
+
+        // Attendance delta vs yesterday
+        const yesterdayRecords = yesterdayAttResult.data ?? [];
+        let attendanceDelta: number | null = null;
+        if (yesterdayRecords.length > 0 && attTotal > 0) {
+          const yesterdayPresent = yesterdayRecords.filter((r) => r.status === "present").length;
+          const yesterdayPct = (yesterdayPresent / yesterdayRecords.length) * 100;
+          const todayPct = (presentCount / attTotal) * 100;
+          attendanceDelta = Math.round((todayPct - yesterdayPct) * 10) / 10;
+        }
+
         // Recent activity from payments + enrollments
         const activity: ActivityItem[] = [];
         let actId = 1;
@@ -222,6 +267,8 @@ export function useDashboardData() {
           totalProfessors: String(professorCount),
           activeClasses: String(activeClasses),
           attendanceToday: `${attendancePct}%`,
+          newStudentsThisMonth,
+          attendanceDelta,
           enrollment,
           attendance: attSummary,
           payments: {
@@ -247,16 +294,24 @@ export function useDashboardData() {
         // Today's attendance for teacher's classes
         let attSummary = emptyAttendance;
         let avgAttPct = "0%";
+        let attendanceDelta: number | null = null;
+        const yesterdayProf = toISODate(new Date(Date.now() - 86400000));
         if (classIds.length > 0 && supabase) {
-          const { data: attRecords } = await supabase
-            .from("attendance")
-            .select("status")
-            .in("class_id", classIds)
-            .eq("date", today);
+          const [{ data: attRecords }, { data: yesterdayRecords }] = await Promise.all([
+            supabase.from("attendance").select("status").in("class_id", classIds).eq("date", today),
+            supabase.from("attendance").select("status").in("class_id", classIds).eq("date", yesterdayProf),
+          ]);
           if (attRecords && attRecords.length > 0) {
             attSummary = computeAttendanceSummary(attRecords);
             const presentCount = attRecords.filter((r) => r.status === "present").length;
             avgAttPct = `${((presentCount / attRecords.length) * 100).toFixed(1)}%`;
+
+            if (yesterdayRecords && yesterdayRecords.length > 0) {
+              const yPresent = yesterdayRecords.filter((r) => r.status === "present").length;
+              const yPct = (yPresent / yesterdayRecords.length) * 100;
+              const tPct = (presentCount / attRecords.length) * 100;
+              attendanceDelta = Math.round((tPct - yPct) * 10) / 10;
+            }
           }
         }
 
@@ -319,6 +374,7 @@ export function useDashboardData() {
           myStudents: String(totalStudents),
           avgAttendance: avgAttPct,
           pendingEvals: String(pendingEvals),
+          attendanceDelta,
           attendance: attSummary,
           recentActivity,
           todayClasses,

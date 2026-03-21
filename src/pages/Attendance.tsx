@@ -253,7 +253,7 @@ export function Attendance() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[540px]">
             <thead className="bg-[#f8fafc] border-b border-border">
               <tr>
                 <SortableHeader label="Grado/Sección" sortKey="grade" currentSortKey={sortKey} currentDirection={sortDir} onSort={handleSort} align="left" />
@@ -267,7 +267,13 @@ export function Attendance() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {sortedClasses.map((cls) => (
+              {sortedClasses.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-[#64748b]">
+                    No se encontraron registros de asistencia
+                  </td>
+                </tr>
+              ) : sortedClasses.map((cls) => (
                 <tr key={cls.id} className="hover:bg-[#f8fafc] transition-colors">
                   <td className="px-6 py-4"><span className="text-sm text-[#1e293b]">{cls.grade}</span></td>
                   <td className="px-6 py-4 text-center"><span className="text-sm text-[#64748b]">{cls.total}</span></td>
@@ -304,7 +310,7 @@ export function Attendance() {
       >
         <div className="space-y-4">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[400px]">
               <thead className="bg-[#f8fafc] border-b border-border">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs text-[#64748b] uppercase tracking-wider">#</th>

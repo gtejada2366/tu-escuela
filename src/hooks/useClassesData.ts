@@ -43,10 +43,12 @@ export function useClassesData() {
   const professorsList = usersRegistry.filter((u: RegisteredUser) => u.role === "profesor" && u.status === "active");
 
   const [classes, setClasses] = useState<ClassLocal[]>(() => {
+    if (isSupabaseEnabled()) return [];
     if (isProfesor) return demoClasses.filter((c) => c.teacher === user?.name);
     return demoClasses;
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(isSupabaseEnabled());
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSupabaseEnabled()) return;
@@ -105,6 +107,7 @@ export function useClassesData() {
       }
       setLoading(false);
     }).catch(() => {
+      setError("Error al cargar las clases. Verifica tu conexión.");
       setLoading(false);
     });
   }, [isProfesor, user]);
@@ -112,7 +115,7 @@ export function useClassesData() {
   const addClass = useCallback(async (cls: Omit<ClassLocal, "id">) => {
     if (isSupabaseEnabled()) {
       const teacherProfile = usersRegistry.find((u) => u.name === cls.teacher);
-      const { data } = await classesService.create({
+      const { data, error: err } = await classesService.create({
         subject: cls.subject,
         grade: cls.grade,
         section: cls.section,
@@ -121,7 +124,9 @@ export function useClassesData() {
         classroom: null,
         status: cls.status as "active" | "inactive",
         academic_year_id: null,
+        grade_config: null,
       });
+      if (err) throw new Error(err);
       if (data) {
         setClasses((prev) => [...prev, { ...cls, id: data.id }]);
       }
@@ -151,5 +156,5 @@ export function useClassesData() {
     setClasses((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  return { classes, setClasses, loading, addClass, updateClass, removeClass, professorsList };
+  return { classes, setClasses, loading, error, addClass, updateClass, removeClass, professorsList };
 }

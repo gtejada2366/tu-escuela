@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useSchoolConfig } from "../contexts/SchoolConfigContext";
+import { validatePassword } from "../lib/validation";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
 
 export function ResetPassword() {
@@ -37,8 +38,9 @@ export function ResetPassword() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
+    const passErr = validatePassword(password);
+    if (passErr) {
+      setError(passErr);
       return;
     }
 
@@ -91,7 +93,7 @@ export function ResetPassword() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#eff6ff] mb-4 overflow-hidden">
             {logoUrl ? (
-              <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+              <img src={logoUrl} alt="Logo del colegio" className="w-full h-full object-cover" />
             ) : (
               <GraduationCap className="w-8 h-8 text-[#2563eb]" />
             )}
@@ -137,9 +139,10 @@ export function ResetPassword() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm text-[#1e293b] mb-1">Nueva contraseña</label>
+                  <label htmlFor="reset-new-password" className="block text-sm text-[#1e293b] mb-1">Nueva contraseña</label>
                   <div className="relative">
                     <input
+                      id="reset-new-password"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); setError(""); }}
@@ -150,6 +153,7 @@ export function ResetPassword() {
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors"
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -157,9 +161,10 @@ export function ResetPassword() {
                 </div>
 
                 <div>
-                  <label className="block text-sm text-[#1e293b] mb-1">Confirmar contraseña</label>
+                  <label htmlFor="reset-confirm-password" className="block text-sm text-[#1e293b] mb-1">Confirmar contraseña</label>
                   <div className="relative">
                     <input
+                      id="reset-confirm-password"
                       type={showConfirm ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
@@ -170,6 +175,7 @@ export function ResetPassword() {
                       type="button"
                       onClick={() => setShowConfirm((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors"
+                      aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
                     >
                       {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>

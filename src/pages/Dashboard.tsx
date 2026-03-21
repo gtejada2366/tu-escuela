@@ -58,10 +58,26 @@ function DirectorDashboard({ stats }: { stats: ReturnType<typeof useDashboardDat
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Total Estudiantes" value={stats.totalStudents} icon={Users} change="Matriculados" changeType="neutral" />
+        <MetricCard
+          title="Total Estudiantes"
+          value={stats.totalStudents}
+          icon={Users}
+          change={stats.newStudentsThisMonth > 0 ? `+${stats.newStudentsThisMonth} este mes` : "Sin nuevos este mes"}
+          changeType={stats.newStudentsThisMonth > 0 ? "positive" : "neutral"}
+        />
         <MetricCard title="Total Profesores" value={stats.totalProfessors} icon={GraduationCap} change="Activos" changeType="neutral" />
         <MetricCard title="Clases Activas" value={stats.activeClasses} icon={BookOpen} change="En curso" changeType="neutral" />
-        <MetricCard title="Asistencia Hoy" value={stats.attendanceToday} icon={TrendingUp} change="Del día" changeType="neutral" />
+        <MetricCard
+          title="Asistencia Hoy"
+          value={stats.attendanceToday}
+          icon={TrendingUp}
+          change={stats.attendanceDelta !== null
+            ? `${stats.attendanceDelta >= 0 ? "+" : ""}${stats.attendanceDelta}% vs ayer`
+            : "Sin datos de ayer"}
+          changeType={stats.attendanceDelta !== null
+            ? (stats.attendanceDelta >= 0 ? "positive" : "negative")
+            : "neutral"}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -70,6 +86,7 @@ function DirectorDashboard({ stats }: { stats: ReturnType<typeof useDashboardDat
             <h3 className="text-lg text-[#1e293b] mb-1">Crecimiento de Estudiantes</h3>
             <p className="text-sm text-[#64748b]">Nuevas matrículas por mes - {new Date().getFullYear()}</p>
           </div>
+          <div className="w-full min-h-[280px]">
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={stats.enrollment}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -79,6 +96,7 @@ function DirectorDashboard({ stats }: { stats: ReturnType<typeof useDashboardDat
               <Line type="monotone" dataKey="students" stroke="#2563eb" strokeWidth={2} dot={{ fill: '#2563eb', r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg p-6 border border-border shadow-sm">
@@ -122,7 +140,7 @@ function DirectorDashboard({ stats }: { stats: ReturnType<typeof useDashboardDat
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg p-6 border border-border shadow-sm">
-          <h3 className="text-lg text-[#1e293b] mb-4">Estado de Pagos - Marzo</h3>
+          <h3 className="text-lg text-[#1e293b] mb-4">Estado de Pagos - {new Date().toLocaleString("es-PE", { month: "long" }).replace(/^\w/, c => c.toUpperCase())}</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <span className="text-sm text-[#64748b]">Pagos Recibidos</span>
@@ -193,8 +211,24 @@ function ProfesorDashboard({ userName, stats }: { userName: string; stats: Retur
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="Mis Clases" value={stats.myClasses} icon={BookOpen} change="Activas" changeType="neutral" />
         <MetricCard title="Mis Estudiantes" value={stats.myStudents} icon={Users} change="En total" changeType="neutral" />
-        <MetricCard title="Asistencia Hoy" value={stats.avgAttendance} icon={TrendingUp} change="Del día" changeType="neutral" />
-        <MetricCard title="Evaluaciones Pendientes" value={stats.pendingEvals} icon={CalendarDays} change="Clases sin notas" changeType="neutral" />
+        <MetricCard
+          title="Asistencia Hoy"
+          value={stats.avgAttendance}
+          icon={TrendingUp}
+          change={stats.attendanceDelta !== null
+            ? `${stats.attendanceDelta >= 0 ? "+" : ""}${stats.attendanceDelta}% vs ayer`
+            : "Sin datos de ayer"}
+          changeType={stats.attendanceDelta !== null
+            ? (stats.attendanceDelta >= 0 ? "positive" : "negative")
+            : "neutral"}
+        />
+        <MetricCard
+          title="Evaluaciones Pendientes"
+          value={stats.pendingEvals}
+          icon={CalendarDays}
+          change={Number(stats.pendingEvals) > 0 ? "Clases sin notas" : "Al día"}
+          changeType={Number(stats.pendingEvals) > 0 ? "negative" : "positive"}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

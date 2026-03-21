@@ -37,6 +37,14 @@ async function upsert(record: GradeInsert): Promise<string | null> {
   const { error } = await supabase
     .from("grades")
     .upsert(record, { onConflict: "class_id,student_id,period" });
+  // If grade_values column doesn't exist yet, retry without it
+  if (error && error.message?.includes("grade_values")) {
+    const { grade_values: _, ...rest } = record;
+    const { error: err2 } = await supabase
+      .from("grades")
+      .upsert(rest as any, { onConflict: "class_id,student_id,period" });
+    return err2?.message ?? null;
+  }
   return error?.message ?? null;
 }
 

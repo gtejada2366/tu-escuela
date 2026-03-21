@@ -155,32 +155,38 @@ export function Grados() {
 
                       {isExpanded && (
                         <div className="border-t border-border">
-                          {g.sections.map((s) => (
-                            <div key={s.section} className="px-5 py-3">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xs font-medium text-[#64748b] uppercase tracking-wider">
-                                  Sección {s.section}
-                                </span>
-                                <span className="text-xs text-[#94a3b8]">({s.students.length})</span>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                                {s.students.map((st) => (
-                                  <Link
-                                    key={st.id}
-                                    to={`/estudiantes/${st.id}`}
-                                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f8fafc] transition-colors group"
-                                  >
-                                    <div className="w-8 h-8 rounded-full bg-[#eff6ff] flex items-center justify-center shrink-0">
-                                      <span className="text-xs text-[#2563eb]">{st.avatar}</span>
-                                    </div>
-                                    <span className="text-sm text-[#1e293b] group-hover:text-[#2563eb] transition-colors truncate">
-                                      {st.name}
-                                    </span>
-                                  </Link>
-                                ))}
-                              </div>
+                          {g.sections.length === 0 ? (
+                            <div className="px-5 py-6 text-center text-sm text-[#94a3b8]">
+                              No hay estudiantes registrados en este grado
                             </div>
-                          ))}
+                          ) : (
+                            g.sections.map((s) => (
+                              <div key={s.section} className="px-5 py-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="text-xs font-medium text-[#64748b] uppercase tracking-wider">
+                                    Sección {s.section}
+                                  </span>
+                                  <span className="text-xs text-[#94a3b8]">({s.students.length})</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                                  {s.students.map((st) => (
+                                    <Link
+                                      key={st.id}
+                                      to={`/estudiantes/${st.id}`}
+                                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f8fafc] transition-colors group"
+                                    >
+                                      <div className="w-8 h-8 rounded-full bg-[#eff6ff] flex items-center justify-center shrink-0">
+                                        <span className="text-xs text-[#2563eb]">{st.avatar}</span>
+                                      </div>
+                                      <span className="text-sm text-[#1e293b] group-hover:text-[#2563eb] transition-colors truncate">
+                                        {st.name}
+                                      </span>
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       )}
                     </div>

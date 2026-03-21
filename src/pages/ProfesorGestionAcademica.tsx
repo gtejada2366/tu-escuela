@@ -59,10 +59,15 @@ const formatDateDisplay = (dateStr: string) => {
   return d.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 };
 
+function isoDate(daysFromNow: number): string {
+  const d = new Date(Date.now() + daysFromNow * 86400000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 const initialHomeworkData: Homework[] = [
-  { id: 1, title: "Ecuaciones de primer grado", dueDate: "2026-03-15", description: "Resolver ejercicios 1 al 20 del libro de texto, capítulo 5.", submitted: 24, total: 28 },
-  { id: 2, title: "Sistemas de ecuaciones", dueDate: "2026-03-22", description: "Resolver los sistemas de 2 incógnitas de la hoja de trabajo.", submitted: 28, total: 28 },
-  { id: 3, title: "Geometría básica", dueDate: "2026-03-29", description: "Calcular áreas y perímetros de las figuras proporcionadas.", submitted: 18, total: 28 },
+  { id: 1, title: "Ecuaciones de primer grado", dueDate: isoDate(-6), description: "Resolver ejercicios 1 al 20 del libro de texto, capítulo 5.", submitted: 24, total: 28 },
+  { id: 2, title: "Sistemas de ecuaciones", dueDate: isoDate(1), description: "Resolver los sistemas de 2 incógnitas de la hoja de trabajo.", submitted: 28, total: 28 },
+  { id: 3, title: "Geometría básica", dueDate: isoDate(8), description: "Calcular áreas y perímetros de las figuras proporcionadas.", submitted: 18, total: 28 },
 ];
 
 export function ProfesorGestionAcademica() {
@@ -70,13 +75,14 @@ export function ProfesorGestionAcademica() {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  const [classesData, setClassesData] = useState<ClassItem[]>(demoClasses);
-  const [selectedClass, setSelectedClass] = useState<ClassItem>(demoClasses[0]);
-  const [studentsForClass, setStudentsForClass] = useState<StudentItem[]>(demoStudents);
+  const supabaseOn = isSupabaseEnabled();
+  const [classesData, setClassesData] = useState<ClassItem[]>(() => supabaseOn ? [] : demoClasses);
+  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(() => supabaseOn ? null : demoClasses[0]);
+  const [studentsForClass, setStudentsForClass] = useState<StudentItem[]>(() => supabaseOn ? [] : demoStudents);
   const [attendanceStatuses, setAttendanceStatuses] = useState<Record<number, string>>({});
-  const [grades, setGrades] = useState<GradeRow[]>(demoGrades);
-  const [homeworks, setHomeworks] = useState<Homework[]>(initialHomeworkData);
-  const [loading, setLoading] = useState(false);
+  const [grades, setGrades] = useState<GradeRow[]>(() => supabaseOn ? [] : demoGrades);
+  const [homeworks, setHomeworks] = useState<Homework[]>(() => supabaseOn ? [] : initialHomeworkData);
+  const [loading, setLoading] = useState(supabaseOn);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("students");
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -102,6 +108,9 @@ export function ProfesorGestionAcademica() {
         }));
         setClassesData(mapped);
         setSelectedClass(mapped[0]);
+      } else {
+        setClassesData([]);
+        setSelectedClass(null);
       }
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -176,6 +185,7 @@ export function ProfesorGestionAcademica() {
   }, []);
 
   useEffect(() => {
+    if (!selectedClass) return;
     loadClassData(selectedClass.id).catch(() => {});
   }, [selectedClass, loadClassData]);
 
@@ -197,6 +207,7 @@ export function ProfesorGestionAcademica() {
   };
 
   const handleSaveAttendance = async () => {
+    if (!selectedClass) return;
     if (!isSupabaseEnabled()) {
       showToast("Asistencia registrada exitosamente");
       return;
@@ -230,6 +241,7 @@ export function ProfesorGestionAcademica() {
   };
 
   const handleSaveGrades = async () => {
+    if (!selectedClass) return;
     if (!isSupabaseEnabled()) {
       showToast("Calificaciones guardadas exitosamente");
       return;
@@ -245,6 +257,7 @@ export function ProfesorGestionAcademica() {
           exam2: g.exam2,
           homework: g.homework,
           participation: 0,
+          grade_values: [g.exam1, g.exam2, g.homework, 0],
         });
         if (error) throw new Error(error);
       }
@@ -274,6 +287,7 @@ export function ProfesorGestionAcademica() {
   };
 
   const handleSaveHomework = async () => {
+    if (!selectedClass) return;
     if (!hwForm.title.trim() || !hwForm.dueDate) {
       showToast("Completa todos los campos obligatorios", "error");
       return;
@@ -359,6 +373,20 @@ export function ProfesorGestionAcademica() {
   const sortedGrades = sortData(grades, sortKey, sortDir);
 
   if (loading) return <LoadingSpinner />;
+
+  if (!selectedClass) {
+    return (
+      <div className="space-y-6">
+        <Link to={`/profesores/${id}`} className="inline-flex items-center gap-2 text-sm text-[#64748b] hover:text-[#1e293b] transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Volver al Perfil
+        </Link>
+        <div className="bg-white rounded-lg border border-border shadow-sm p-6">
+          <h1 className="text-2xl text-[#1e293b] mb-2">Gestión Académica</h1>
+          <p className="text-sm text-[#64748b]">No tienes clases asignadas actualmente</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

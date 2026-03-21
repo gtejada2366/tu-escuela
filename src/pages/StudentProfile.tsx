@@ -219,7 +219,7 @@ export function StudentProfile() {
           {paymentsHistory.length > 0 && (
             <div className="mt-6 pt-4 border-t border-border">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-[#64748b]">Total Pagado 2026</span>
+                <span className="text-sm text-[#64748b]">Total Pagado {new Date().getFullYear()}</span>
               </div>
               <p className="text-2xl text-[#1e293b]">{getPaymentTotal(paymentsHistory)}</p>
             </div>

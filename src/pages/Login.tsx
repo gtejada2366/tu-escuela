@@ -58,7 +58,7 @@ export function Login() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#eff6ff] mb-4 overflow-hidden">
             {logoUrl ? (
-              <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+              <img src={logoUrl} alt="Logo del colegio" className="w-full h-full object-cover" />
             ) : (
               <GraduationCap className="w-8 h-8 text-[#2563eb]" />
             )}
@@ -94,8 +94,9 @@ export function Login() {
 
                   <form onSubmit={handleResetPassword} className="space-y-4">
                     <div>
-                      <label className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
+                      <label htmlFor="login-reset-email" className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
                       <input
+                        id="login-reset-email"
                         type="email"
                         value={resetEmail}
                         onChange={(e) => { setResetEmail(e.target.value); setResetError(""); }}
@@ -126,8 +127,9 @@ export function Login() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
+                  <label htmlFor="login-email" className="block text-sm text-[#1e293b] mb-1">Correo electrónico</label>
                   <input
+                    id="login-email"
                     type="text"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(""); }}
@@ -138,7 +140,7 @@ export function Login() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm text-[#1e293b]">Contraseña</label>
+                    <label htmlFor="login-password" className="block text-sm text-[#1e293b]">Contraseña</label>
                     <button
                       type="button"
                       onClick={() => { setShowReset(true); setResetEmail(email); }}
@@ -149,6 +151,7 @@ export function Login() {
                   </div>
                   <div className="relative">
                     <input
+                      id="login-password"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); setError(""); }}
@@ -159,6 +162,7 @@ export function Login() {
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors"
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>

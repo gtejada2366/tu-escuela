@@ -1,22 +1,24 @@
+import { lazy } from "react";
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
-import { Dashboard } from "./pages/Dashboard";
-import { Students } from "./pages/Students";
-import { StudentProfile } from "./pages/StudentProfile";
-import { Attendance } from "./pages/Attendance";
-import { Payments } from "./pages/Payments";
-import { Profesores } from "./pages/Profesores";
-import { ProfesorProfile } from "./pages/ProfesorProfile";
-import { ProfesorGestionAcademica } from "./pages/ProfesorGestionAcademica";
-import { Grados } from "./pages/Grados";
-import { Clases } from "./pages/Clases";
-import { ClaseDetail } from "./pages/ClaseDetail";
-import { Calificaciones } from "./pages/Calificaciones";
-import { Mensajeria } from "./pages/Mensajeria";
-import { Roles } from "./pages/Roles";
-import { MiCuenta } from "./pages/MiCuenta";
-import { Configuracion } from "./pages/Configuracion";
-import { NotFound } from "./pages/NotFound";
+
+const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
+const Students = lazy(() => import("./pages/Students").then(m => ({ default: m.Students })));
+const StudentProfile = lazy(() => import("./pages/StudentProfile").then(m => ({ default: m.StudentProfile })));
+const Attendance = lazy(() => import("./pages/Attendance").then(m => ({ default: m.Attendance })));
+const Payments = lazy(() => import("./pages/Payments").then(m => ({ default: m.Payments })));
+const Profesores = lazy(() => import("./pages/Profesores").then(m => ({ default: m.Profesores })));
+const ProfesorProfile = lazy(() => import("./pages/ProfesorProfile").then(m => ({ default: m.ProfesorProfile })));
+const ProfesorGestionAcademica = lazy(() => import("./pages/ProfesorGestionAcademica").then(m => ({ default: m.ProfesorGestionAcademica })));
+const Grados = lazy(() => import("./pages/Grados").then(m => ({ default: m.Grados })));
+const Clases = lazy(() => import("./pages/Clases").then(m => ({ default: m.Clases })));
+const ClaseDetail = lazy(() => import("./pages/ClaseDetail").then(m => ({ default: m.ClaseDetail })));
+const Calificaciones = lazy(() => import("./pages/Calificaciones").then(m => ({ default: m.Calificaciones })));
+const Mensajeria = lazy(() => import("./pages/Mensajeria").then(m => ({ default: m.Mensajeria })));
+const Roles = lazy(() => import("./pages/Roles").then(m => ({ default: m.Roles })));
+const MiCuenta = lazy(() => import("./pages/MiCuenta").then(m => ({ default: m.MiCuenta })));
+const Configuracion = lazy(() => import("./pages/Configuracion").then(m => ({ default: m.Configuracion })));
+const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 
 export const router = createBrowserRouter([
   {

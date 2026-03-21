@@ -129,6 +129,8 @@ export type Student = {
   updated_at: string;
 };
 
+export type GradeColumnConfig = { label: string; weight: number };
+
 export type ClassRecord = {
   id: number;
   subject: string;
@@ -139,6 +141,7 @@ export type ClassRecord = {
   classroom: string | null;
   status: "active" | "inactive";
   academic_year_id: number | null;
+  grade_config: GradeColumnConfig[] | null;
   created_at: string;
   updated_at: string;
 };
@@ -170,6 +173,7 @@ export type GradeRecord = {
   homework: number;
   participation: number;
   average: number;
+  grade_values: number[] | null;
   created_at: string;
   updated_at: string;
 };
