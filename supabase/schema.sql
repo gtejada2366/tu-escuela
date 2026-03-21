@@ -125,15 +125,17 @@ CREATE TABLE grades (
 -- 8. Payments
 -- ============================================================
 CREATE TABLE payments (
-  id          SERIAL PRIMARY KEY,
-  student_id  INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  concept     TEXT NOT NULL DEFAULT 'Pensión Escolar',
-  amount      NUMERIC(10,2) NOT NULL,
-  due_date    DATE NOT NULL,
-  paid_date   DATE,
-  status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('paid', 'pending', 'overdue')),
-  created_at  TIMESTAMPTZ DEFAULT now(),
-  updated_at  TIMESTAMPTZ DEFAULT now()
+  id              SERIAL PRIMARY KEY,
+  student_id      INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  concept         TEXT NOT NULL DEFAULT 'Pensión Escolar',
+  amount          NUMERIC(10,2) NOT NULL,
+  due_date        DATE NOT NULL,
+  paid_date       DATE,
+  status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('paid', 'pending', 'overdue')),
+  payment_method  TEXT CHECK (payment_method IN ('manual', 'online')),
+  transaction_id  TEXT,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
 );
 
 -- 9. Messages
@@ -281,8 +283,15 @@ CREATE POLICY "Grades: profesor manages own" ON grades FOR ALL USING (
   is_teacher_of_class(class_id)
 );
 
--- PAYMENTS: director full access only
+-- PAYMENTS: director full access, parents read own children
 CREATE POLICY "Payments: director full" ON payments FOR ALL USING (is_director());
+CREATE POLICY "Payments: parent reads own" ON payments FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM students s
+    WHERE s.id = payments.student_id
+    AND s.parent_email = (SELECT email FROM profiles WHERE id = auth.uid())
+  )
+);
 
 -- HOMEWORK: director full, profesor manages own classes
 CREATE POLICY "Homework: director full" ON homework FOR ALL USING (is_director());

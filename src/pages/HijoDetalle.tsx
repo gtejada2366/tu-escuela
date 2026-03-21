@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router";
 import { Badge } from "../components/Badge";
 import {
@@ -9,13 +10,17 @@ import {
   XCircle,
   Clock,
   Download,
+  CreditCard,
 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useStudentProfileData } from "../hooks/useStudentProfileData";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { useSchoolConfig } from "../contexts/SchoolConfigContext";
+import { useAuth } from "../contexts/AuthContext";
 import { generarConstancia } from "../lib/pdf/reporteConstancia";
 import { generarLibreta } from "../lib/pdf/reporteCalificaciones";
+import { PaymentCheckout } from "../components/PaymentCheckout";
+import { isCulqiEnabled } from "../lib/culqi";
 
 function getAttendanceCounts(baseAttendance: number) {
   const totalDays = 142;
@@ -45,6 +50,10 @@ export function HijoDetalle() {
   const { id } = useParams();
   const { student, loading, error, found } = useStudentProfileData(id);
   const { schoolName } = useSchoolConfig();
+  const { user } = useAuth();
+  const [payingPayment, setPayingPayment] = useState<{
+    id: number; studentName: string; concept: string; amount: number; dueDate: string;
+  } | null>(null);
 
   if (loading) return <LoadingSpinner />;
 
@@ -176,6 +185,21 @@ export function HijoDetalle() {
                     <span className="text-xs text-[#64748b]">{payment.date}</span>
                     <span className="text-sm text-[#1e293b]">{payment.amount}</span>
                   </div>
+                  {payment.status !== "paid" && user?.role === "padre" && isCulqiEnabled() && (
+                    <button
+                      onClick={() => setPayingPayment({
+                        id: payment.id,
+                        studentName: student.name,
+                        concept: payment.month,
+                        amount: parseFloat(payment.amount.replace(/[^\d.]/g, "")),
+                        dueDate: payment.date,
+                      })}
+                      className="mt-2 w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-[#2563eb] text-white text-xs font-medium hover:bg-[#1d4ed8] transition-colors"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                      Pagar Ahora
+                    </button>
+                  )}
                 </div>
               ))}
               <div className="pt-3 border-t border-border">
@@ -219,6 +243,20 @@ export function HijoDetalle() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Payment checkout modal */}
+      {payingPayment && (
+        <PaymentCheckout
+          paymentId={payingPayment.id}
+          studentName={payingPayment.studentName}
+          concept={payingPayment.concept}
+          amount={payingPayment.amount}
+          dueDate={payingPayment.dueDate}
+          email={user?.email ?? ""}
+          onSuccess={() => { setPayingPayment(null); window.location.reload(); }}
+          onClose={() => setPayingPayment(null)}
+        />
       )}
     </div>
   );

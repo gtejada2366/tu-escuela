@@ -126,22 +126,6 @@ const testimonials = [
 
 const pricing = [
   {
-    name: "Gratuito",
-    price: "S/ 0",
-    period: "para siempre",
-    description: "Para colegios pequeños que quieren empezar",
-    features: [
-      "Hasta 50 estudiantes",
-      "1 sede",
-      "Gestión básica de estudiantes",
-      "Control de asistencia",
-      "Calificaciones",
-      "Reportes PDF",
-    ],
-    cta: "Empezar Gratis",
-    highlighted: false,
-  },
-  {
     name: "Básico",
     price: "S/ 299",
     period: "/mes",
@@ -155,7 +139,7 @@ const pricing = [
       "Notificaciones en app",
       "Soporte por email",
     ],
-    cta: "Comenzar Prueba",
+    cta: "Comenzar Prueba Gratis",
     highlighted: true,
   },
   {

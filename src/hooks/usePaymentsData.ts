@@ -10,6 +10,7 @@ export interface PaymentLocal {
   dueDate: string;
   paidDate: string;
   status: "paid" | "pending" | "overdue";
+  paymentMethod: "manual" | "online" | null;
 }
 
 function dmyDate(d: Date): string {
@@ -27,27 +28,27 @@ function buildDemoPayments(): PaymentLocal[] {
   const paidPrev = dmyDate(new Date(y, m - 1, 28));
 
   return [
-    { id: 1, student: "María González Pérez", grade: "5° Primaria A", amount: 450, dueDate: curDue, paidDate: paidPrev, status: "paid" },
-    { id: 2, student: "Juan Pérez Rodríguez", grade: "4° Primaria B", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid" },
-    { id: 3, student: "Sofía Martínez López", grade: "3° Secundaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
-    { id: 4, student: "Diego Ramírez Silva", grade: "2° Secundaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue" },
-    { id: 5, student: "Valentina Torres Castro", grade: "4 años A", amount: 350, dueDate: curDue, paidDate: paid(5), status: "paid" },
-    { id: 6, student: "Mateo Flores Ruiz", grade: "1° Secundaria A", amount: 450, dueDate: curDue, paidDate: paid(2), status: "paid" },
-    { id: 7, student: "Isabella Vargas Díaz", grade: "5 años B", amount: 350, dueDate: curDue, paidDate: "-", status: "pending" },
-    { id: 8, student: "Sebastián Morales Ríos", grade: "1° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(3), status: "paid" },
-    { id: 9, student: "Camila Herrera Ortiz", grade: "6° Primaria B", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
-    { id: 10, student: "Alejandro Soto Méndez", grade: "2° Primaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue" },
-    { id: 11, student: "Luciana Castro Paredes", grade: "5° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid" },
-    { id: 12, student: "Emilio Guzmán Vega", grade: "3° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
-    { id: 13, student: "Renata Delgado Cruz", grade: "4° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(4), status: "paid" },
-    { id: 14, student: "Nicolás Peña Romero", grade: "4° Secundaria A", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue" },
-    { id: 15, student: "Antonella Ríos Luna", grade: "3 años B", amount: 350, dueDate: curDue, paidDate: paid(2), status: "paid" },
-    { id: 16, student: "Gabriel Navarro Campos", grade: "2° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
-    { id: 17, student: "Mariana León Salazar", grade: "5° Secundaria B", amount: 450, dueDate: curDue, paidDate: paid(6), status: "paid" },
-    { id: 18, student: "Daniel Aguilar Ponce", grade: "4° Primaria B", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
-    { id: 19, student: "Victoria Medina Torres", grade: "3° Secundaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue" },
-    { id: 20, student: "Tomás Reyes Figueroa", grade: "6° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid" },
-    { id: 21, student: "Paula Jiménez Bravo", grade: "1° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending" },
+    { id: 1, student: "María González Pérez", grade: "5° Primaria A", amount: 450, dueDate: curDue, paidDate: paidPrev, status: "paid", paymentMethod: "manual" },
+    { id: 2, student: "Juan Pérez Rodríguez", grade: "4° Primaria B", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid", paymentMethod: "manual" },
+    { id: 3, student: "Sofía Martínez López", grade: "3° Secundaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending", paymentMethod: null },
+    { id: 4, student: "Diego Ramírez Silva", grade: "2° Secundaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue", paymentMethod: null },
+    { id: 5, student: "Valentina Torres Castro", grade: "4 años A", amount: 350, dueDate: curDue, paidDate: paid(5), status: "paid", paymentMethod: "manual" },
+    { id: 6, student: "Mateo Flores Ruiz", grade: "1° Secundaria A", amount: 450, dueDate: curDue, paidDate: paid(2), status: "paid", paymentMethod: "manual" },
+    { id: 7, student: "Isabella Vargas Díaz", grade: "5 años B", amount: 350, dueDate: curDue, paidDate: "-", status: "pending", paymentMethod: null },
+    { id: 8, student: "Sebastián Morales Ríos", grade: "1° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(3), status: "paid", paymentMethod: "manual" },
+    { id: 9, student: "Camila Herrera Ortiz", grade: "6° Primaria B", amount: 450, dueDate: curDue, paidDate: "-", status: "pending", paymentMethod: null },
+    { id: 10, student: "Alejandro Soto Méndez", grade: "2° Primaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue", paymentMethod: null },
+    { id: 11, student: "Luciana Castro Paredes", grade: "5° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid", paymentMethod: "manual" },
+    { id: 12, student: "Emilio Guzmán Vega", grade: "3° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending", paymentMethod: null },
+    { id: 13, student: "Renata Delgado Cruz", grade: "4° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(4), status: "paid", paymentMethod: "manual" },
+    { id: 14, student: "Nicolás Peña Romero", grade: "4° Secundaria A", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue", paymentMethod: null },
+    { id: 15, student: "Antonella Ríos Luna", grade: "3 años B", amount: 350, dueDate: curDue, paidDate: paid(2), status: "paid", paymentMethod: "manual" },
+    { id: 16, student: "Gabriel Navarro Campos", grade: "2° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending", paymentMethod: null },
+    { id: 17, student: "Mariana León Salazar", grade: "5° Secundaria B", amount: 450, dueDate: curDue, paidDate: paid(6), status: "paid", paymentMethod: "manual" },
+    { id: 18, student: "Daniel Aguilar Ponce", grade: "4° Primaria B", amount: 450, dueDate: curDue, paidDate: "-", status: "pending", paymentMethod: null },
+    { id: 19, student: "Victoria Medina Torres", grade: "3° Secundaria B", amount: 450, dueDate: prevDue, paidDate: "-", status: "overdue", paymentMethod: null },
+    { id: 20, student: "Tomás Reyes Figueroa", grade: "6° Primaria A", amount: 450, dueDate: curDue, paidDate: paid(1), status: "paid", paymentMethod: "manual" },
+    { id: 21, student: "Paula Jiménez Bravo", grade: "1° Primaria A", amount: 450, dueDate: curDue, paidDate: "-", status: "pending", paymentMethod: null },
   ];
 }
 
@@ -79,6 +80,7 @@ export function usePaymentsData() {
         dueDate: formatDateDMY(p.due_date),
         paidDate: formatDateDMY(p.paid_date),
         status: p.status,
+        paymentMethod: p.payment_method ?? null,
       })));
       setLoading(false);
     }).catch(() => {
@@ -96,7 +98,7 @@ export function usePaymentsData() {
       await paymentsService.registerPayment(id, todayISO);
     }
     setPayments((prev) =>
-      prev.map((p) => p.id === id ? { ...p, status: "paid" as const, paidDate: todayStr } : p)
+      prev.map((p) => p.id === id ? { ...p, status: "paid" as const, paidDate: todayStr, paymentMethod: "manual" as const } : p)
     );
   }, []);
 

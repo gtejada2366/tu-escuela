@@ -334,7 +334,14 @@ export function Payments() {
                   <td className="px-6 py-4"><span className="text-sm text-[#1e293b]">S/ {payment.amount}</span></td>
                   <td className="px-6 py-4 hidden lg:table-cell"><span className="text-sm text-[#64748b]">{payment.dueDate}</span></td>
                   <td className="px-6 py-4 hidden lg:table-cell"><span className={`text-sm ${payment.paidDate === '-' ? 'text-[#64748b]' : 'text-[#1e293b]'}`}>{payment.paidDate}</span></td>
-                  <td className="px-6 py-4">{getPaymentBadge(payment.status)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-1.5">
+                      {getPaymentBadge(payment.status)}
+                      {payment.paymentMethod === "online" && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#eff6ff] text-[#2563eb]">Online</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     {payment.status !== "paid" ? (
                       <button

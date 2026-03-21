@@ -186,6 +186,8 @@ export type PaymentRecord = {
   due_date: string;
   paid_date: string | null;
   status: "paid" | "pending" | "overdue";
+  payment_method: "manual" | "online" | null;
+  transaction_id: string | null;
   created_at: string;
   updated_at: string;
 };
