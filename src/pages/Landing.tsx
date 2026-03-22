@@ -20,6 +20,7 @@ import {
 
 interface LandingProps {
   onLogin: () => void;
+  onSignup?: () => void;
 }
 
 const features = [
@@ -168,7 +169,8 @@ const stats = [
   { value: "3", label: "Roles de usuario" },
 ];
 
-export function Landing({ onLogin }: LandingProps) {
+export function Landing({ onLogin, onSignup }: LandingProps) {
+  const handleSignup = onSignup || onLogin;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const scrollTo = (id: string) => {
@@ -204,7 +206,7 @@ export function Landing({ onLogin }: LandingProps) {
                 Iniciar Sesión
               </button>
               <button
-                onClick={onLogin}
+                onClick={handleSignup}
                 className="px-4 py-2 text-sm text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors"
               >
                 Prueba Gratis
@@ -228,7 +230,8 @@ export function Landing({ onLogin }: LandingProps) {
             <button onClick={() => scrollTo("pricing")} className="block w-full text-left px-3 py-2 text-sm text-[#64748b] hover:bg-[#f8fafc] rounded-lg">Planes</button>
             <button onClick={() => scrollTo("testimonials")} className="block w-full text-left px-3 py-2 text-sm text-[#64748b] hover:bg-[#f8fafc] rounded-lg">Testimonios</button>
             <hr className="border-[#e2e8f0]" />
-            <button onClick={onLogin} className="block w-full text-center px-4 py-2.5 text-sm text-white bg-[#2563eb] rounded-lg">Iniciar Sesión</button>
+            <button onClick={onLogin} className="block w-full text-center px-4 py-2.5 text-sm text-white bg-[#2563eb] rounded-lg mb-2">Iniciar Sesión</button>
+            <button onClick={handleSignup} className="block w-full text-center px-4 py-2.5 text-sm text-[#2563eb] bg-[#eff6ff] rounded-lg">Registrarse Gratis</button>
           </div>
         )}
       </nav>
@@ -253,7 +256,7 @@ export function Landing({ onLogin }: LandingProps) {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <button
-              onClick={onLogin}
+              onClick={handleSignup}
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] transition-colors text-base font-medium shadow-lg shadow-[#2563eb]/25"
             >
               Comenzar Gratis <ArrowRight className="w-5 h-5" />
@@ -453,7 +456,7 @@ export function Landing({ onLogin }: LandingProps) {
                   ))}
                 </ul>
                 <button
-                  onClick={onLogin}
+                  onClick={plan.highlighted ? handleSignup : onLogin}
                   className={`w-full py-3 rounded-xl text-sm font-medium transition-colors ${
                     plan.highlighted
                       ? "bg-white text-[#2563eb] hover:bg-[#f8fafc]"
@@ -513,7 +516,7 @@ export function Landing({ onLogin }: LandingProps) {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={onLogin}
+              onClick={handleSignup}
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-white text-[#2563eb] rounded-xl hover:bg-[#f8fafc] transition-colors text-base font-medium"
             >
               Crear Cuenta Gratis <ArrowRight className="w-5 h-5" />

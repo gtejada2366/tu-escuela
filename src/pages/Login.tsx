@@ -5,9 +5,10 @@ import { GraduationCap, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 interface LoginProps {
   onBack?: () => void;
+  onSignup?: () => void;
 }
 
-export function Login({ onBack }: LoginProps) {
+export function Login({ onBack, onSignup }: LoginProps) {
   const { login, resetPassword } = useAuth();
   const { schoolName, tagline, logoUrl } = useSchoolConfig();
 
@@ -188,6 +189,17 @@ export function Login({ onBack }: LoginProps) {
             </>
           )}
         </div>
+
+        {onSignup && (
+          <div className="mt-4 text-center">
+            <p className="text-sm text-[#64748b]">
+              ¿No tienes cuenta?{" "}
+              <button onClick={onSignup} className="text-[#2563eb] hover:text-[#1d4ed8] font-medium">
+                Regístrate gratis
+              </button>
+            </p>
+          </div>
+        )}
 
         {onBack && (
           <button
